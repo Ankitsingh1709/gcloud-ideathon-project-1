@@ -6,6 +6,7 @@ import { JournalEntry, UserProfile } from './types';
 import LoginScreen from './components/LoginScreen';
 import Sidebar from './components/Sidebar';
 import MainDashboard from './components/MainDashboard';
+import InsightsDashboard from './components/InsightsDashboard';
 import { AlertTriangle, BookOpen, RefreshCw } from 'lucide-react';
 
 export default function App() {
@@ -14,6 +15,7 @@ export default function App() {
   const [selectedEntryId, setSelectedEntryId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [globalError, setGlobalError] = useState<string | null>(null);
+  const [currentView, setCurrentView] = useState<'workspace' | 'insights'>('workspace');
 
   // Filters State
   const [searchQuery, setSearchQuery] = useState('');
@@ -98,6 +100,7 @@ export default function App() {
     };
     
     // Set locally first to open the workspace instantly
+    setCurrentView('workspace');
     setSelectedEntryId(newId);
   };
 
@@ -198,7 +201,10 @@ export default function App() {
           user={user}
           entries={entries}
           selectedEntryId={selectedEntryId}
-          onSelectEntry={(id) => setSelectedEntryId(id)}
+          onSelectEntry={(id) => {
+            setSelectedEntryId(id);
+            setCurrentView('workspace');
+          }}
           onNewEntry={handleNewEntry}
           onSignOut={handleSignOut}
           searchQuery={searchQuery}
@@ -208,13 +214,24 @@ export default function App() {
           selectedMood={selectedMood}
           onMoodChange={setSelectedMood}
           onDeleteEntry={handleDeleteEntry}
+          currentView={currentView}
+          onViewChange={setCurrentView}
         />
 
-        <MainDashboard 
-          entry={activeEntry}
-          onSaveEntry={handleSaveEntry}
-          onNewEntry={handleNewEntry}
-        />
+        {currentView === 'insights' ? (
+          <InsightsDashboard entries={entries} />
+        ) : (
+          <MainDashboard 
+            entry={activeEntry}
+            onSaveEntry={handleSaveEntry}
+            onNewEntry={handleNewEntry}
+            entries={entries}
+            onSelectEntry={(id) => {
+              setSelectedEntryId(id);
+              setCurrentView('workspace');
+            }}
+          />
+        )}
       </div>
     </div>
   );

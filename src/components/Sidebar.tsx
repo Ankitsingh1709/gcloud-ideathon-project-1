@@ -2,7 +2,7 @@ import React from 'react';
 import { JournalEntry, UserProfile } from '../types';
 import { 
   LogOut, Plus, Search, BookOpen, 
-  Calendar, Hash, Smile, Sparkles, FilterX 
+  Calendar, Hash, Smile, Sparkles, FilterX, BrainCircuit
 } from 'lucide-react';
 import SidebarEntryItem from './SidebarEntryItem';
 
@@ -20,6 +20,8 @@ interface SidebarProps {
   selectedMood: string;
   onMoodChange: (mood: string) => void;
   onDeleteEntry: (id: string) => void;
+  currentView?: 'workspace' | 'insights';
+  onViewChange?: (view: 'workspace' | 'insights') => void;
 }
 
 export default function Sidebar({
@@ -35,7 +37,9 @@ export default function Sidebar({
   onCategoryChange,
   selectedMood,
   onMoodChange,
-  onDeleteEntry
+  onDeleteEntry,
+  currentView = 'workspace',
+  onViewChange
 }: SidebarProps) {
 
   // Extract all unique categories and moods
@@ -98,6 +102,34 @@ export default function Sidebar({
           title="New Journal Reflection"
         >
           <Plus className="w-4 h-4" />
+        </button>
+      </div>
+
+      {/* Navigation View Switcher */}
+      <div className="px-4 py-3 flex border-b border-[#1c1c1c]" id="sidebar-navigation-view-switcher">
+        <button
+          onClick={() => onViewChange && onViewChange('workspace')}
+          className={`flex-1 flex items-center justify-center space-x-1.5 py-2 text-center font-bold text-xs uppercase tracking-wider rounded-xl transition cursor-pointer ${
+            currentView === 'workspace'
+              ? 'bg-[#1a1a1a] text-white border border-[#2a2a2a]'
+              : 'text-[#666] hover:text-[#ccc]'
+          }`}
+          id="toggle-reflections-view-btn"
+        >
+          <BookOpen className="w-3.5 h-3.5" />
+          <span>Reflect</span>
+        </button>
+        <button
+          onClick={() => onViewChange && onViewChange('insights')}
+          className={`flex-1 flex items-center justify-center space-x-1.5 py-2 text-center font-bold text-xs uppercase tracking-wider rounded-xl transition cursor-pointer ${
+            currentView === 'insights'
+              ? 'bg-[#1a1a1a] text-white border border-[#2a2a2a]'
+              : 'text-[#666] hover:text-[#ccc]'
+          }`}
+          id="toggle-insights-view-btn"
+        >
+          <BrainCircuit className="w-3.5 h-3.5 text-[#8b5cf6]" />
+          <span>Insights</span>
         </button>
       </div>
 

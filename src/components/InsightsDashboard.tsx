@@ -1,0 +1,361 @@
+import React, { useMemo } from 'react';
+import { JournalEntry } from '../types';
+import { 
+  Sparkles, Calendar, BookOpen, BrainCircuit, Heart, 
+  TrendingUp, BarChart2, CheckCircle2, ShieldCheck, Flame, PieChart
+} from 'lucide-react';
+import { 
+  ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, 
+  BarChart, Bar, Cell
+} from 'recharts';
+
+interface InsightsDashboardProps {
+  entries: JournalEntry[];
+}
+
+// Map structured moods to numerical scores for trend calculations
+const MOOD_SCORE_MAP: Record<string, number> = {
+  '😊 joy': 5,
+  'excited': 4.8,
+  '💪 motivated': 4.5,
+  'motivated': 4.5,
+  'grateful': 4.3,
+  '🧘 serene': 4.0,
+  'calm': 4.0,
+  'reflective': 3.5,
+  'melancholy': 2.0,
+  'anxious': 1.5,
+};
+
+// Simple helper to normalize stored mood string for mapping
+const getMoodScore = (moodString: string): number => {
+  const norm = moodString.toLowerCase().trim();
+  // Check exact matches or substring matches
+  for (const [key, value] of Object.entries(MOOD_SCORE_MAP)) {
+    if (norm.includes(key)) {
+      return value;
+    }
+  }
+  return 3.5; // Default neutral score
+};
+
+export default function InsightsDashboard({ entries }: InsightsDashboardProps) {
+  // 1. Data Calculation: Filter out drafts and sort chronologically
+  const activeEntries = useMemo(() => {
+    return [...entries]
+      .filter(e => !e.isDraft && e.createdAt)
+      .sort((a, b) => a.createdAt - b.createdAt);
+  }, [entries]);
+
+  // 2. Metrics Calculations
+  const stats = useMemo(() => {
+    const totalReflections = activeEntries.length;
+    
+    // Find most active category
+    const categoryCounts: Record<string, number> = {};
+    activeEntries.forEach(e => {
+      if (e.category) {
+        categoryCounts[e.category] = (categoryCounts[e.category] || 0) + 1;
+      }
+    });
+    let topCategory = 'None Yet';
+    let topCategoryCount = 0;
+    Object.entries(categoryCounts).forEach(([cat, val]) => {
+      if (val > topCategoryCount) {
+        topCategory = cat;
+        topCategoryCount = val;
+      }
+    });
+
+    // Find most frequent mood
+    const moodCounts: Record<string, number> = {};
+    activeEntries.forEach(e => {
+      if (e.mood) {
+        moodCounts[e.mood] = (moodCounts[e.mood] || 0) + 1;
+      }
+    });
+    let topMood = 'None Yet';
+    let topMoodCount = 0;
+    Object.entries(moodCounts).forEach(([m, val]) => {
+      if (val > topMoodCount) {
+        topMood = m;
+        topMoodCount = val;
+      }
+    });
+
+    // Calculate Streak (consecutive days of active reflection)
+    let currentStreak = 0;
+    if (totalReflections > 0) {
+      const dates = activeEntries.map(e => {
+        const d = new Date(e.createdAt);
+        return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`;
+      });
+      const uniqueDates = Array.from(new Set(dates)).map((dStr: string) => new Date(dStr).getTime());
+      uniqueDates.sort((a, b) => b - a); // descending order (newest first)
+
+      const oneDayMs = 24 * 60 * 60 * 1000;
+      const today = new Date();
+      const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime();
+      const yesterdayStart = todayStart - oneDayMs;
+
+      // Check if last reflection was today or yesterday
+      if (uniqueDates[0] >= yesterdayStart) {
+        currentStreak = 1;
+        for (let i = 0; i < uniqueDates.length - 1; i++) {
+          const diff = uniqueDates[i] - uniqueDates[i + 1];
+          // Allow up to 30 hours of slack between entry days
+          if (diff <= oneDayMs * 1.5) {
+            currentStreak++;
+          } else {
+            break;
+          }
+        }
+      }
+    }
+
+    return {
+      totalReflections,
+      topCategory: topCategoryCount > 0 ? `${topCategory} (${topCategoryCount})` : 'No category logged',
+      topMood: topMoodCount > 0 ? topMood : 'No mood logged',
+      streak: currentStreak
+    };
+  }, [activeEntries]);
+
+  // 3. Weekly Trend Line Data: Group entries into weeks
+  const trendData = useMemo(() => {
+    if (activeEntries.length === 0) return [];
+
+    // Group entries into 7-day windows trailing backwards from today
+    const now = Date.now();
+    const oneWeekMs = 7 * 24 * 60 * 60 * 1000;
+    const weeklyWindows = Array.from({ length: 6 }).map((_, index) => {
+      const windowEnd = now - (index * oneWeekMs);
+      const windowStart = windowEnd - oneWeekMs;
+      return {
+        label: index === 0 ? 'This Week' : `${index}w ago`,
+        start: windowStart,
+        end: windowEnd,
+        scores: [] as number[],
+      };
+    });
+
+    activeEntries.forEach(entry => {
+      weeklyWindows.forEach(w => {
+        if (entry.createdAt >= w.start && entry.createdAt < w.end) {
+          const score = getMoodScore(entry.mood || 'Reflective');
+          w.scores.push(score);
+        }
+      });
+    });
+
+    // reverse to show chronologically
+    return weeklyWindows
+      .reverse()
+      .map(w => {
+        const avgScore = w.scores.length > 0 
+          ? Number((w.scores.reduce((a, b) => a + b, 0) / w.scores.length).toFixed(1))
+          : 3.5; // default to neutral when silent
+        return {
+          week: w.label,
+          'Mood Index': avgScore,
+          Reflections: w.scores.length,
+        };
+      });
+  }, [activeEntries]);
+
+  // 4. Category Breakdown Data
+  const categoryData = useMemo(() => {
+    const counts: Record<string, number> = {};
+    activeEntries.forEach(e => {
+      if (e.category) {
+        counts[e.category] = (counts[e.category] || 0) + 1;
+      }
+    });
+
+    return Object.entries(counts)
+      .map(([name, value]) => ({
+        name,
+        value,
+      }))
+      .sort((a, b) => b.value - a.value);
+  }, [activeEntries]);
+
+  // Color scheme constants matched to our luxury dark palette
+  const accentColors = ['#8b5cf6', '#d946ef', '#10b981', '#f59e0b', '#3b82f6'];
+
+  return (
+    <div className="flex-1 flex flex-col bg-[#0a0a0a] overflow-y-auto p-8 space-y-8" id="insights-dashboard-root">
+      {/* Tab Header Header */}
+      <div className="flex flex-col md:flex-row items-start md:items-center justify-between border-b border-[#2a2a2a] pb-6 space-y-4 md:space-y-0">
+        <div className="space-y-1.5 text-left">
+          <div className="flex items-center space-x-2">
+            <BrainCircuit className="w-5 h-5 text-[#8b5cf6]" />
+            <h1 className="text-xl font-bold text-white tracking-tight">Personal Reflection Insights</h1>
+          </div>
+          <p className="text-xs text-[#888] leading-relaxed max-w-xl">
+            A dynamic, client-side intelligence dashboard compiling emotional, psychological, and categorization trends derived securely from your isolated past reflections.
+          </p>
+        </div>
+        <div className="flex items-center space-x-1.5 bg-[#121212] border border-[#222] px-3 py-1.5 rounded-full text-[10px] text-emerald-400 font-bold uppercase tracking-wider">
+          <ShieldCheck className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+          <span>Private uid-scoped queries only</span>
+        </div>
+      </div>
+
+      {/* Hero Stats Panel */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4" id="insights-grid-stats">
+        <div className="bg-[#0c0c0c]/80 border border-[#222] rounded-2xl p-5 space-y-2 text-left">
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] uppercase font-bold tracking-wider text-[#666]">Total Reflections</span>
+            <BookOpen className="w-4 h-4 text-[#8b5cf6]" />
+          </div>
+          <p className="text-2xl font-black text-white">{stats.totalReflections}</p>
+          <p className="text-[10px] text-[#555]">Preserved entries in database</p>
+        </div>
+
+        <div className="bg-[#0c0c0c]/80 border border-[#222] rounded-2xl p-5 space-y-2 text-left">
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] uppercase font-bold tracking-wider text-[#666]">Active Streak</span>
+            <Flame className="w-4 h-4 text-[#d946ef]" />
+          </div>
+          <p className="text-2xl font-black text-white">{stats.streak} {stats.streak === 1 ? 'Day' : 'Days'}</p>
+          <p className="text-[10px] text-[#555]">Consecutive writing days</p>
+        </div>
+
+        <div className="bg-[#0c0c0c]/80 border border-[#222] rounded-2xl p-5 space-y-2 text-left">
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] uppercase font-bold tracking-wider text-[#666]">Primary Category</span>
+            <Sparkles className="w-4 h-4 text-[#10b981]" />
+          </div>
+          <p className="text-base font-bold text-white line-clamp-1">{stats.topCategory}</p>
+          <p className="text-[10px] text-[#555]">Most written focus area</p>
+        </div>
+
+        <div className="bg-[#0c0c0c]/80 border border-[#222] rounded-2xl p-5 space-y-2 text-left">
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] uppercase font-bold tracking-wider text-[#666]">Dominant Mood</span>
+            <Heart className="w-4 h-4 text-rose-400" />
+          </div>
+          <p className="text-lg font-bold text-white line-clamp-1">{stats.topMood}</p>
+          <p className="text-[10px] text-[#555]">Most cataloged sentiment</p>
+        </div>
+      </div>
+
+      {stats.totalReflections > 0 ? (
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          {/* Trend Chart (Line chart over last 6 weeks) */}
+          <div className="lg:col-span-8 bg-[#0c0c0c]/80 border border-[#222] rounded-2xl p-5 space-y-4 flex flex-col justify-between min-h-[350px]">
+            <div className="flex items-center justify-between text-left">
+              <div className="space-y-1">
+                <h3 className="text-sm font-bold text-white flex items-center space-x-1.5">
+                  <TrendingUp className="w-4 h-4 text-[#8b5cf6]" />
+                  <span>Weekly Mood Index Trend</span>
+                </h3>
+                <p className="text-[11px] text-[#666]">Calculated average from mood metadata across 7-day increments</p>
+              </div>
+            </div>
+
+            <div className="flex-1 w-full min-h-[220px] pt-4">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={trendData} margin={{ top: 10, right: 10, left: -25, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="moodGradient" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.3}/>
+                      <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0}/>
+                    </linearGradient>
+                  </defs>
+                  <XAxis 
+                    dataKey="week" 
+                    stroke="#444" 
+                    fontSize={10} 
+                    fontWeight="bold"
+                    tickLine={false} 
+                  />
+                  <YAxis 
+                    domain={[1, 5]} 
+                    ticks={[1, 2, 3, 4, 5]} 
+                    stroke="#444" 
+                    fontSize={10} 
+                    fontWeight="bold"
+                    tickLine={false} 
+                  />
+                  <Tooltip 
+                    contentStyle={{ 
+                      backgroundColor: '#121212', 
+                      borderColor: '#333', 
+                      borderRadius: '12px',
+                      color: '#fff',
+                      fontSize: '11px',
+                      fontWeight: 'bold'
+                    }} 
+                  />
+                  <Area 
+                    type="monotone" 
+                    dataKey="Mood Index" 
+                    stroke="#8b5cf6" 
+                    strokeWidth={2.5} 
+                    fillOpacity={1} 
+                    fill="url(#moodGradient)" 
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+
+          {/* Categories Bar Distribution */}
+          <div className="lg:col-span-4 bg-[#0c0c0c]/80 border border-[#222] rounded-2xl p-5 space-y-4 flex flex-col justify-between min-h-[350px]">
+            <div className="text-left space-y-1">
+              <h3 className="text-sm font-bold text-white flex items-center space-x-1.5">
+                <BarChart2 className="w-4 h-4 text-[#d946ef]" />
+                <span>Focus Distribution</span>
+              </h3>
+              <p className="text-[11px] text-[#666]">Occurrence counts across categorized journal focus labels</p>
+            </div>
+
+            <div className="flex-1 w-full min-h-[200px] flex items-center justify-center">
+              {categoryData.length > 0 ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={categoryData} layout="vertical" margin={{ top: 10, right: 10, left: -20, bottom: 5 }}>
+                    <XAxis type="number" stroke="#444" fontSize={10} hide />
+                    <YAxis dataKey="name" type="category" stroke="#888" fontSize={10} fontWeight="bold" tickLine={false} width={80} />
+                    <Tooltip 
+                      contentStyle={{ 
+                        backgroundColor: '#121212', 
+                        borderColor: '#333', 
+                        borderRadius: '12px',
+                        color: '#fff',
+                        fontSize: '11px'
+                      }} 
+                    />
+                    <Bar dataKey="value" fill="#8b5cf6" radius={[0, 6, 6, 0]}>
+                      {categoryData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={accentColors[index % accentColors.length]} />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="text-center py-8">
+                  <PieChart className="w-8 h-8 text-[#222] mx-auto mb-2" />
+                  <p className="text-xs text-[#555] font-semibold">No structured categories logged yet</p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div className="bg-[#0c0c0c]/80 border border-[#222] rounded-2xl p-12 text-center max-w-lg mx-auto space-y-5" id="insights-empty-dashboard">
+          <div className="w-12 h-12 bg-[#1a1a1a] rounded-2xl flex items-center justify-center mx-auto text-[#8b5cf6] border border-[#2a2a2a]">
+            <BrainCircuit className="w-6 h-6 animate-pulse" />
+          </div>
+          <div className="space-y-1">
+            <h3 className="text-sm font-bold text-white">Analysis Workspace Offline</h3>
+            <p className="text-xs text-[#666] leading-relaxed">
+              We require at least one active saved reflection to trace trend patterns. Begin writing inside the workspace to auto-catalog tags!
+            </p>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}

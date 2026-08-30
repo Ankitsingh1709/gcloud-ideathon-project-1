@@ -3,7 +3,8 @@ import { JournalEntry, Message } from '../types';
 import { auth } from '../lib/firebase';
 import { 
   Sparkles, Send, Save, CheckCircle, AlertTriangle, 
-  RefreshCw, Smile, Hash, BookOpen, BrainCircuit, Feather
+  RefreshCw, Smile, Hash, BookOpen, BrainCircuit, Feather,
+  Calendar, Clock, ChevronDown, ChevronUp, Plus
 } from 'lucide-react';
 
 interface MainDashboardProps {
@@ -11,13 +12,17 @@ interface MainDashboardProps {
   onSaveEntry: (entry: JournalEntry) => Promise<void>;
   onNewEntry: () => void;
   onDeleteEntry?: (id: string) => Promise<void>;
+  entries?: JournalEntry[];
+  onSelectEntry?: (id: string) => void;
 }
 
 export default function MainDashboard({
   entry,
   onSaveEntry,
   onNewEntry,
-  onDeleteEntry
+  onDeleteEntry,
+  entries = [],
+  onSelectEntry
 }: MainDashboardProps) {
   const [inputText, setInputText] = useState('');
   const [loadingReflection, setLoadingReflection] = useState(false);
@@ -26,11 +31,150 @@ export default function MainDashboard({
   // Persistence state tracking
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const [lastErrorMessage, setLastErrorMessage] = useState('');
+  const [hasReflectionError, setHasReflectionError] = useState(false);
 
   const [localTitle, setLocalTitle] = useState('');
 
-  // Keep local title in sync with current entry
+  // On This Day milestone states
+  const [onThisDayMatches, setOnThisDayMatches] = useState<{
+    entry: JournalEntry;
+    label: string;
+    formattedDate: string;
+  }[]>([]);
+  const [isOnThisDayExpanded, setIsOnThisDayExpanded] = useState(false);
+  const [seedingMilestone, setSeedingMilestone] = useState<string | null>(null);
+
+  // Milestone matching logic
   useEffect(() => {
+    if (!entries || entries.length === 0) {
+      setOnThisDayMatches([]);
+      return;
+    }
+
+    const now = Date.now();
+    const oneDayMs = 24 * 60 * 60 * 1000;
+    const matches: {
+      entry: JournalEntry;
+      label: string;
+      formattedDate: string;
+    }[] = [];
+
+    entries.forEach((e) => {
+      // Exclude currently active entry
+      if (entry && e.id === entry.id) return;
+
+      const diffMs = now - e.createdAt;
+      const diffDays = diffMs / oneDayMs;
+
+      let label = '';
+      if (diffDays >= 5 && diffDays <= 9) {
+        label = '1 week ago';
+      } else if (diffDays >= 25 && diffDays <= 35) {
+        label = '1 month ago';
+      } else if (diffDays >= 340 && diffDays <= 385) {
+        label = '1 year ago';
+      }
+
+      if (label) {
+        matches.push({
+          entry: e,
+          label,
+          formattedDate: new Date(e.createdAt).toLocaleDateString('en-US', {
+            month: 'long',
+            day: 'numeric',
+            year: 'numeric'
+          })
+        });
+      }
+    });
+
+    setOnThisDayMatches(matches);
+  }, [entries, entry?.id]);
+
+  const handleSeedPastEntry = async (daysAgo: number) => {
+    const milestoneLabel = daysAgo === 7 ? '1 week ago' : daysAgo === 30 ? '1 month ago' : '1 year ago';
+    setSeedingMilestone(milestoneLabel);
+    
+    const pastTimestamp = Date.now() - (daysAgo * 24 * 60 * 60 * 1000);
+    const newId = `ref-${pastTimestamp}-${Math.floor(Math.random() * 1000)}`;
+    
+    let title = '';
+    let category = '';
+    let mood = '';
+    let summary = '';
+    let userMsg = '';
+    let geminiMsg = '';
+
+    if (daysAgo === 7) {
+      title = 'Seeking Daily Flow';
+      category = '#Habits';
+      mood = '🧘 Serene';
+      userMsg = 'I want to focus on my writing routine and build morning habits. But I feel distracted by notifications and tasks.';
+      geminiMsg = 'Building a distraction-free space is key. Try creating tiny habits—like writing for just five minutes without your phone nearby. Consistent rhythm always beats intensity.';
+      summary = 'An exploration on establishing early morning writing habits and managing digital distractions.';
+    } else if (daysAgo === 30) {
+      title = 'Connecting with Nature';
+      category = '#Personal';
+      mood = '😊 Joy';
+      userMsg = 'Had a gorgeous hike today through the cedar pines. Smelling the damp forest floor made me feel so grounded and alive.';
+      geminiMsg = 'Spending intentional time in nature has a beautiful grounding effect. Hold on to this feeling of vitality—it is a great anchor for busy or stressful days.';
+      summary = 'A refreshing record of grounding nature walks, forest therapy, and emotional renewal.';
+    } else {
+      title = 'Year End Aspirations';
+      category = '#Work';
+      mood = '💪 Motivated';
+      userMsg = 'Reflecting on my long-term goals. I want to build things that matter, simplify my routine, and learn to write cleaner code.';
+      geminiMsg = 'Simplification is a highly powerful tool. By refining your goals to a few core aspirations, you gain tremendous focus. Keep simplifying and creating with purpose.';
+      summary = 'Yearly goals review focused on professional simplicity, deep craft excellence, and clean development habits.';
+    }
+
+    const seededEntry: JournalEntry = {
+      id: newId,
+      title,
+      createdAt: pastTimestamp,
+      updatedAt: pastTimestamp,
+      messages: [
+        {
+          role: 'user',
+          content: userMsg,
+          timestamp: pastTimestamp
+        },
+        {
+          role: 'model',
+          content: geminiMsg,
+          timestamp: pastTimestamp + 5000
+        }
+      ],
+      summary,
+      category,
+      mood,
+      isDraft: false
+    };
+
+    try {
+      await onSaveEntry(seededEntry);
+      setSaveStatus('saved');
+    } catch (err: any) {
+      console.error('Failed to seed past entry:', err);
+    } finally {
+      setSeedingMilestone(null);
+    }
+  };
+
+  const handleReflectOnPastEntry = (match: { entry: JournalEntry; label: string; formattedDate: string }) => {
+    onNewEntry();
+    const dateStr = match.formattedDate;
+    const moodStr = match.entry.mood ? ` (Mood was ${match.entry.mood})` : '';
+    const titleStr = match.entry.title ? ` "${match.entry.title}"` : ' untitled reflection';
+    
+    setInputText(
+      `Today I am revisiting my reflection from ${match.label} (written on ${dateStr}${moodStr}) titled${titleStr}.\n\nBack then, my key focus was:\n> ${match.entry.summary || 'Exploring my routine and feelings.'}\n\nLooking back at that reflection, here is how I feel today...`
+    );
+  };
+
+  // Keep local title in sync with current entry & reset error state
+  useEffect(() => {
+    setHasReflectionError(false);
     if (entry) {
       setLocalTitle(entry.title || '');
     } else {
@@ -94,6 +238,7 @@ export default function MainDashboard({
 
     const userMessageContent = inputText.trim();
     setInputText('');
+    setHasReflectionError(false);
 
     // 1. Setup new message object
     const userMessage: Message = {
@@ -166,6 +311,58 @@ export default function MainDashboard({
       console.error('Reflection Generation Error:', err);
       setSaveStatus('error');
       setLastErrorMessage(err?.message || 'AI engine was unreachable. Please try again.');
+      setHasReflectionError(true);
+    } finally {
+      setLoadingReflection(false);
+    }
+  };
+
+  const handleRetryReflection = async () => {
+    if (loadingReflection || !entry) return;
+
+    setLoadingReflection(true);
+    setHasReflectionError(false);
+    setSaveStatus('saving');
+
+    try {
+      const idToken = await auth.currentUser?.getIdToken();
+      if (!idToken) throw new Error('Authentication expired. Please sign in again.');
+
+      const response = await fetch('/api/gemini/reflect', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${idToken}`
+        },
+        body: JSON.stringify({ messages: entry.messages })
+      });
+
+      if (!response.ok) {
+        const errData = await response.json().catch(() => ({}));
+        throw new Error(errData.error || 'Server failed to process reflection.');
+      }
+
+      const result = await response.json();
+      const modelMessage: Message = {
+        role: 'model',
+        content: result.response,
+        timestamp: Date.now()
+      };
+
+      const finalMessages = [...entry.messages, modelMessage];
+      const completedEntry: JournalEntry = {
+        ...entry,
+        messages: finalMessages,
+        updatedAt: Date.now()
+      };
+
+      await onSaveEntry(sanitizePayloadForFirebase(completedEntry));
+      setSaveStatus('saved');
+    } catch (err: any) {
+      console.error('Reflection Generation Retry Error:', err);
+      setSaveStatus('error');
+      setLastErrorMessage(err?.message || 'AI engine was unreachable. Please try again.');
+      setHasReflectionError(true);
     } finally {
       setLoadingReflection(false);
     }
@@ -436,6 +633,113 @@ export default function MainDashboard({
 
         {/* Conversation / Typing Panel */}
         <div className="flex-1 flex flex-col justify-between bg-[#0a0a0a] overflow-hidden h-full">
+          {/* "On This Day" Panel */}
+          <div className="border-b border-[#2a2a2a] bg-[#0c0c0c]/90 px-6 py-3.5 flex flex-col space-y-3 shrink-0" id="on-this-day-dashboard-panel">
+            <button 
+              type="button"
+              onClick={() => setIsOnThisDayExpanded(!isOnThisDayExpanded)}
+              className="flex items-center justify-between w-full text-left font-bold text-xs uppercase tracking-wider text-[#888] hover:text-[#ccc] transition cursor-pointer"
+            >
+              <div className="flex items-center space-x-2">
+                <Clock className="w-4 h-4 text-[#8b5cf6]" />
+                <span>On This Day: Revisit Past Reflections ({onThisDayMatches.length})</span>
+              </div>
+              {isOnThisDayExpanded ? <ChevronUp className="w-4 h-4 text-[#888]" /> : <ChevronDown className="w-4 h-4 text-[#888]" />}
+            </button>
+
+            {isOnThisDayExpanded && (
+              <div className="pt-2 animate-fade-in" id="on-this-day-expanded-section">
+                {onThisDayMatches.length > 0 ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {onThisDayMatches.map((match, index) => (
+                      <div 
+                        key={index}
+                        className="bg-[#121212] border border-[#222] hover:border-[#333] rounded-2xl p-4.5 space-y-3 transition flex flex-col justify-between"
+                      >
+                        <div className="space-y-1.5 text-left">
+                          <div className="flex items-center justify-between">
+                            <span className="text-[10px] font-bold text-[#8b5cf6] uppercase tracking-wider bg-[#1e1b26] px-2 py-0.5 rounded-md border border-[#4c1d95]/20">
+                              {match.label}
+                            </span>
+                            {match.entry.mood && (
+                              <span className={`inline-flex items-center text-[10px] font-bold border px-2 py-0.5 rounded-full ${getMoodBadgeColor(match.entry.mood)}`}>
+                                {match.entry.mood}
+                              </span>
+                            )}
+                          </div>
+                          <h4 className="text-xs font-bold text-white line-clamp-1">
+                            {match.entry.title || 'Untitled Space'}
+                          </h4>
+                          <p className="text-[11px] text-[#888] line-clamp-2 leading-relaxed">
+                            {match.entry.summary || (match.entry.messages[0] ? match.entry.messages[0].content : 'No text content available.')}
+                          </p>
+                        </div>
+
+                        <div className="pt-2 flex items-center space-x-2 border-t border-[#1a1a1a]">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (onSelectEntry) onSelectEntry(match.entry.id);
+                            }}
+                            className="flex-1 text-center bg-[#1a1a1a] hover:bg-[#222] text-[#ccc] border border-[#333] font-semibold text-[10px] py-1.5 rounded-lg transition cursor-pointer"
+                          >
+                            Read Full
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleReflectOnPastEntry(match)}
+                            className="flex-1 text-center bg-[#8b5cf6] hover:bg-[#7c3aed] text-white font-bold text-[10px] py-1.5 rounded-lg transition cursor-pointer inline-flex items-center justify-center space-x-1"
+                          >
+                            <Sparkles className="w-3 h-3 text-[#d946ef]" />
+                            <span>Reflect</span>
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="bg-[#121212]/50 border border-[#222] rounded-2xl p-5 text-center space-y-4">
+                    <div className="space-y-1 max-w-sm mx-auto text-center">
+                      <p className="text-xs font-semibold text-[#ccc]">No past milestones discovered today</p>
+                      <p className="text-[11px] text-[#666] leading-relaxed">
+                        Reflect.ai compares your current date against historical entries. Click a button below to instantly seed a test reflection into Firestore to explore the feature!
+                      </p>
+                    </div>
+                    <div className="flex flex-wrap items-center justify-center gap-2 max-w-md mx-auto pt-1">
+                      <button
+                        type="button"
+                        onClick={() => handleSeedPastEntry(7)}
+                        disabled={seedingMilestone !== null}
+                        className="inline-flex items-center space-x-1 bg-[#1a1a1a] hover:bg-[#222] text-[#ccc] border border-[#333] font-bold text-[10px] px-3 py-2 rounded-xl transition cursor-pointer disabled:opacity-40"
+                      >
+                        {seedingMilestone === '1 week ago' ? <RefreshCw className="w-3 h-3 animate-spin text-[#8b5cf6]" /> : <Plus className="w-3 h-3 text-[#8b5cf6]" />}
+                        <span>Seed 1 Week Ago</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleSeedPastEntry(30)}
+                        disabled={seedingMilestone !== null}
+                        className="inline-flex items-center space-x-1 bg-[#1a1a1a] hover:bg-[#222] text-[#ccc] border border-[#333] font-bold text-[10px] px-3 py-2 rounded-xl transition cursor-pointer disabled:opacity-40"
+                      >
+                        {seedingMilestone === '1 month ago' ? <RefreshCw className="w-3 h-3 animate-spin text-[#8b5cf6]" /> : <Plus className="w-3 h-3 text-[#8b5cf6]" />}
+                        <span>Seed 1 Month Ago</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleSeedPastEntry(365)}
+                        disabled={seedingMilestone !== null}
+                        className="inline-flex items-center space-x-1 bg-[#1a1a1a] hover:bg-[#222] text-[#ccc] border border-[#333] font-bold text-[10px] px-3 py-2 rounded-xl transition cursor-pointer disabled:opacity-40"
+                      >
+                        {seedingMilestone === '1 year ago' ? <RefreshCw className="w-3 h-3 animate-spin text-[#8b5cf6]" /> : <Plus className="w-3 h-3 text-[#8b5cf6]" />}
+                        <span>Seed 1 Year Ago</span>
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
           {/* Chat Messages */}
           <div className="flex-1 overflow-y-auto p-6 space-y-6" id="messages-container">
             {entry.messages.length === 0 ? (
@@ -487,6 +791,56 @@ export default function MainDashboard({
                         <div className="w-2 h-2 bg-[#8b5cf6] rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
                         <div className="w-2 h-2 bg-[#8b5cf6] rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
                       </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Visible Retry on Reflection Error */}
+                {hasReflectionError && (
+                  <div className="bg-rose-950/20 border border-rose-900/40 rounded-2xl p-4.5 space-y-3 max-w-xl mr-auto ml-0 my-2 text-left" id="reflection-error-panel">
+                    <div className="flex items-start space-x-3 text-rose-300">
+                      <AlertTriangle className="w-4.5 h-4.5 shrink-0 mt-0.5 text-rose-400" />
+                      <div className="space-y-1">
+                        <h4 className="text-xs font-bold text-rose-200">Reflection Unreachable</h4>
+                        <p className="text-[11px] text-rose-300/80 leading-relaxed">
+                          {lastErrorMessage || 'The reflection companion was unreachable. Your input text has been saved safely.'}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-2 pl-7.5">
+                      <button
+                        type="button"
+                        onClick={handleRetryReflection}
+                        disabled={loadingReflection}
+                        id="retry-reflection-bubble-btn"
+                        className="inline-flex items-center space-x-1.5 bg-[#8b5cf6] hover:bg-[#7c3aed] text-white font-bold text-[11px] px-3 py-1.5 rounded-lg transition cursor-pointer"
+                      >
+                        <RefreshCw className={`w-3 h-3 ${loadingReflection ? 'animate-spin' : ''}`} />
+                        <span>Retry Generation</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (entry.messages.length > 0) {
+                            const lastMsg = entry.messages[entry.messages.length - 1];
+                            if (lastMsg.role === 'user') {
+                              setInputText(lastMsg.content);
+                              const remainingMessages = entry.messages.slice(0, -1);
+                              const updatedEntry: JournalEntry = {
+                                ...entry,
+                                messages: remainingMessages,
+                                updatedAt: Date.now()
+                              };
+                              onSaveEntry(sanitizePayloadForFirebase(updatedEntry));
+                            }
+                          }
+                          setHasReflectionError(false);
+                        }}
+                        id="restore-reflection-bubble-btn"
+                        className="inline-flex items-center space-x-1 bg-[#1a1a1a] hover:bg-[#222] text-[#ccc] border border-[#333] font-semibold text-[11px] px-3 py-1.5 rounded-lg transition cursor-pointer"
+                      >
+                        <span>Edit & Re-type</span>
+                      </button>
                     </div>
                   </div>
                 )}

@@ -24,6 +24,7 @@ export default function SidebarEntryItem({
   const [isSwiped, setIsSwiped] = useState(false);
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [showConfirmDelete, setShowConfirmDelete] = useState(false);
   
   // Touch gestures state
   const touchStartX = useRef<number | null>(null);
@@ -64,6 +65,7 @@ export default function SidebarEntryItem({
     } else if (diff > 50) {
       // Swipe Right - Reset
       setIsSwiped(false);
+      setShowConfirmDelete(false);
     }
 
     touchStartX.current = null;
@@ -104,39 +106,65 @@ export default function SidebarEntryItem({
       id={`entry-wrapper-${entry.id}`}
     >
       {/* Background action buttons revealed upon swiping */}
-      <div className="absolute top-0 bottom-0 right-0 w-[130px] flex items-center justify-end px-2 gap-1 bg-[#121212] border-l border-[#2a2a2a]">
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            setIsShareModalOpen(true);
-            setIsSwiped(false);
-          }}
-          className="flex-1 h-10 bg-gradient-to-br from-[#8b5cf6] to-[#7c3aed] text-white rounded-xl flex items-center justify-center hover:opacity-95 transition cursor-pointer"
-          title="Share Reflection"
-          id={`share-btn-reveal-${entry.id}`}
-        >
-          <Share2 className="w-4 h-4" />
-        </button>
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            if (confirm('Are you sure you want to permanently delete this journal reflection?')) {
-              onDelete();
-            }
-            setIsSwiped(false);
-          }}
-          className="flex-1 h-10 bg-rose-600 text-white rounded-xl flex items-center justify-center hover:bg-rose-700 transition cursor-pointer"
-          title="Delete Reflection"
-          id={`delete-btn-reveal-${entry.id}`}
-        >
-          <Trash2 className="w-4 h-4" />
-        </button>
+      <div className="absolute top-0 bottom-0 right-0 w-[160px] flex items-center justify-end px-2 gap-1 bg-[#121212] border-l border-[#2a2a2a]">
+        {showConfirmDelete ? (
+          <div className="flex items-center w-full h-full gap-1 p-1">
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onDelete();
+                setShowConfirmDelete(false);
+                setIsSwiped(false);
+              }}
+              className="flex-1 h-10 bg-rose-600 text-white text-[11px] font-bold rounded-xl flex items-center justify-center hover:bg-rose-700 transition cursor-pointer"
+              id={`confirm-delete-${entry.id}`}
+            >
+              Delete
+            </button>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowConfirmDelete(false);
+              }}
+              className="flex-1 h-10 bg-[#222] text-white text-[11px] font-medium rounded-xl flex items-center justify-center hover:bg-[#333] transition cursor-pointer"
+              id={`cancel-delete-${entry.id}`}
+            >
+              Cancel
+            </button>
+          </div>
+        ) : (
+          <>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsShareModalOpen(true);
+                setIsSwiped(false);
+              }}
+              className="flex-1 h-10 bg-gradient-to-br from-[#8b5cf6] to-[#7c3aed] text-white rounded-xl flex items-center justify-center hover:opacity-95 transition cursor-pointer"
+              title="Share Reflection"
+              id={`share-btn-reveal-${entry.id}`}
+            >
+              <Share2 className="w-4 h-4" />
+            </button>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowConfirmDelete(true);
+              }}
+              className="flex-1 h-10 bg-rose-600 text-white rounded-xl flex items-center justify-center hover:bg-rose-700 transition cursor-pointer"
+              title="Delete Reflection"
+              id={`delete-btn-reveal-${entry.id}`}
+            >
+              <Trash2 className="w-4 h-4" />
+            </button>
+          </>
+        )}
       </div>
 
       {/* Foreground card container */}
       <div
         onClick={onSelect}
-        style={{ transform: isSwiped ? 'translateX(-130px)' : 'translateX(0)' }}
+        style={{ transform: isSwiped ? 'translateX(-160px)' : 'translateX(0)' }}
         className={`w-full text-left p-3.5 rounded-2xl transition-transform duration-300 ease-out flex flex-col space-y-2 border cursor-pointer relative z-10 ${
           isSelected 
             ? 'bg-[#1e1e1e] border-[#333] shadow-md' 

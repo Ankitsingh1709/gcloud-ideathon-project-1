@@ -2,7 +2,7 @@ import React from 'react';
 import { JournalEntry, UserProfile } from '../types';
 import { 
   LogOut, Plus, Search, BookOpen, 
-  Calendar, Hash, Smile, Sparkles, FilterX, BrainCircuit
+  Calendar, Hash, Smile, Sparkles, FilterX, BrainCircuit, ShieldAlert
 } from 'lucide-react';
 import SidebarEntryItem from './SidebarEntryItem';
 
@@ -20,8 +20,8 @@ interface SidebarProps {
   selectedMood: string;
   onMoodChange: (mood: string) => void;
   onDeleteEntry: (id: string) => void;
-  currentView?: 'workspace' | 'insights';
-  onViewChange?: (view: 'workspace' | 'insights') => void;
+  currentView?: 'workspace' | 'insights' | 'admin';
+  onViewChange?: (view: 'workspace' | 'insights' | 'admin') => void;
 }
 
 export default function Sidebar({
@@ -106,7 +106,7 @@ export default function Sidebar({
       </div>
 
       {/* Navigation View Switcher */}
-      <div className="px-4 py-3 flex border-b border-[#1c1c1c]" id="sidebar-navigation-view-switcher">
+      <div className="px-4 py-3 flex border-b border-[#1c1c1c] gap-1" id="sidebar-navigation-view-switcher">
         <button
           onClick={() => onViewChange && onViewChange('workspace')}
           className={`flex-1 flex items-center justify-center space-x-1.5 py-2 text-center font-bold text-xs uppercase tracking-wider rounded-xl transition cursor-pointer ${
@@ -116,7 +116,7 @@ export default function Sidebar({
           }`}
           id="toggle-reflections-view-btn"
         >
-          <BookOpen className="w-3.5 h-3.5" />
+          <BookOpen className="w-3.5 h-3.5 shrink-0" />
           <span>Reflect</span>
         </button>
         <button
@@ -128,9 +128,23 @@ export default function Sidebar({
           }`}
           id="toggle-insights-view-btn"
         >
-          <BrainCircuit className="w-3.5 h-3.5 text-[#8b5cf6]" />
+          <BrainCircuit className="w-3.5 h-3.5 text-[#8b5cf6] shrink-0" />
           <span>Insights</span>
         </button>
+        {user.role === 'admin' && (
+          <button
+            onClick={() => onViewChange && onViewChange('admin')}
+            className={`flex-1 flex items-center justify-center space-x-1.5 py-2 text-center font-bold text-xs uppercase tracking-wider rounded-xl transition cursor-pointer ${
+              currentView === 'admin'
+                ? 'bg-purple-950/40 text-purple-200 border border-purple-900/30'
+                : 'text-purple-400/70 hover:text-purple-300'
+            }`}
+            id="toggle-admin-view-btn"
+          >
+            <ShieldAlert className="w-3.5 h-3.5 shrink-0" />
+            <span>Admin</span>
+          </button>
+        )}
       </div>
 
       {/* Search Input */}

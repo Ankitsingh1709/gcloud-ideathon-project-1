@@ -4,6 +4,12 @@ export interface Message {
   timestamp: number;
 }
 
+export interface LocationData {
+  lat: number;
+  lng: number;
+  placeName?: string;
+}
+
 export interface JournalEntry {
   id: string;
   title: string;
@@ -14,6 +20,7 @@ export interface JournalEntry {
   category: string;
   mood: string;
   isDraft: boolean;
+  location?: LocationData;
 }
 
 export interface UserProfile {
@@ -21,4 +28,5 @@ export interface UserProfile {
   email: string | null;
   displayName: string | null;
   photoURL: string | null;
+  role?: 'admin' | 'user';
 }

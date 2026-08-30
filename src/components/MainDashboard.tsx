@@ -6,6 +6,7 @@ import {
   RefreshCw, Smile, Hash, BookOpen, BrainCircuit, Feather,
   Calendar, Clock, ChevronDown, ChevronUp, Plus
 } from 'lucide-react';
+import MapPicker from './MapPicker';
 
 interface MainDashboardProps {
   entry: JournalEntry | null;
@@ -420,6 +421,23 @@ export default function MainDashboard({
     }
   };
 
+  const handleLocationChange = async (newLocation?: any) => {
+    if (!entry) return;
+    const updated = {
+      ...entry,
+      location: newLocation || undefined,
+      updatedAt: Date.now()
+    };
+    setSaveStatus('saving');
+    try {
+      await onSaveEntry(sanitizePayloadForFirebase(updated));
+      setSaveStatus('saved');
+    } catch (err: any) {
+      setSaveStatus('error');
+      setLastErrorMessage(err?.message || 'Failed to update location.');
+    }
+  };
+
   const getMoodBadgeColor = (mood: string) => {
     switch (mood.toLowerCase()) {
       case 'calm': return 'bg-teal-950/40 text-teal-300 border-teal-900/40';
@@ -610,6 +628,9 @@ export default function MainDashboard({
                 </div>
               )}
             </div>
+
+            {/* Google Map Location Picker */}
+            <MapPicker location={entry.location} onChange={handleLocationChange} />
           </div>
 
           <div className="pt-4 border-t border-[#2a2a2a]">

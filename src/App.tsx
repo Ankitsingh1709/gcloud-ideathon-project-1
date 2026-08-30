@@ -7,6 +7,7 @@ import LoginScreen from './components/LoginScreen';
 import Sidebar from './components/Sidebar';
 import MainDashboard from './components/MainDashboard';
 import InsightsDashboard from './components/InsightsDashboard';
+import AdminDashboard from './components/AdminDashboard';
 import { AlertTriangle, BookOpen, RefreshCw } from 'lucide-react';
 
 export default function App() {
@@ -15,7 +16,7 @@ export default function App() {
   const [selectedEntryId, setSelectedEntryId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [globalError, setGlobalError] = useState<string | null>(null);
-  const [currentView, setCurrentView] = useState<'workspace' | 'insights'>('workspace');
+  const [currentView, setCurrentView] = useState<'workspace' | 'insights' | 'admin'>('workspace');
 
   // Filters State
   const [searchQuery, setSearchQuery] = useState('');
@@ -24,14 +25,30 @@ export default function App() {
 
   // 1. Listen for user authentication state changes
   useEffect(() => {
-    const unsubscribeAuth = onAuthStateChanged(auth, (firebaseUser) => {
+    const unsubscribeAuth = onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
-        setUser({
-          uid: firebaseUser.uid,
-          email: firebaseUser.email,
-          displayName: firebaseUser.displayName,
-          photoURL: firebaseUser.photoURL
-        });
+        try {
+          // Force refresh the token to retrieve the latest custom claims
+          const idTokenResult = await firebaseUser.getIdTokenResult(true);
+          const role = idTokenResult.claims.role as 'admin' | 'user' | undefined;
+          
+          setUser({
+            uid: firebaseUser.uid,
+            email: firebaseUser.email,
+            displayName: firebaseUser.displayName,
+            photoURL: firebaseUser.photoURL,
+            role: role || 'user'
+          });
+        } catch (error) {
+          console.error('Failed to retrieve token custom claims:', error);
+          setUser({
+            uid: firebaseUser.uid,
+            email: firebaseUser.email,
+            displayName: firebaseUser.displayName,
+            photoURL: firebaseUser.photoURL,
+            role: 'user'
+          });
+        }
         setGlobalError(null);
       } else {
         setUser(null);
@@ -64,7 +81,8 @@ export default function App() {
           summary: data.summary || '',
           category: data.category || '',
           mood: data.mood || '',
-          isDraft: data.isDraft !== undefined ? data.isDraft : true
+          isDraft: data.isDraft !== undefined ? data.isDraft : true,
+          location: data.location || undefined
         });
       });
       setEntries(loadedEntries);
@@ -218,7 +236,9 @@ export default function App() {
           onViewChange={setCurrentView}
         />
 
-        {currentView === 'insights' ? (
+        {currentView === 'admin' && user?.role === 'admin' ? (
+          <AdminDashboard />
+        ) : currentView === 'insights' ? (
           <InsightsDashboard entries={entries} />
         ) : (
           <MainDashboard 

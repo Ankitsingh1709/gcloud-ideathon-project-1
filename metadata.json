@@ -2,5 +2,7 @@
   "name": "AI Journal & Reflections",
   "description": "A secure, user-isolated journaling web application where users can write private reflections, converse with Gemini, and keep track of past entries.",
   "requestFramePermissions": [],
-  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
 }

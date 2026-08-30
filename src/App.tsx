@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
-import { collection, query, orderBy, onSnapshot, doc, setDoc } from 'firebase/firestore';
+import { collection, query, orderBy, onSnapshot, doc, setDoc, deleteDoc } from 'firebase/firestore';
 import { auth, db } from './lib/firebase';
 import { JournalEntry, UserProfile } from './types';
 import LoginScreen from './components/LoginScreen';
@@ -113,6 +113,20 @@ export default function App() {
     await setDoc(entryRef, sanitizedObj, { merge: true });
   };
 
+  const handleDeleteEntry = async (entryId: string) => {
+    if (!user) return;
+    try {
+      const entryRef = doc(db, 'users', user.uid, 'entries', entryId);
+      await deleteDoc(entryRef);
+      if (selectedEntryId === entryId) {
+        setSelectedEntryId(null);
+      }
+    } catch (error: any) {
+      console.error('Failed to delete entry:', error);
+      setGlobalError('Failed to delete reflection entry. Please try again.');
+    }
+  };
+
   // Find selected entry (or create a virtual one if starting fresh before first save)
   const getActiveEntry = (): JournalEntry | null => {
     if (!selectedEntryId) return null;
@@ -193,6 +207,7 @@ export default function App() {
           onCategoryChange={setSelectedCategory}
           selectedMood={selectedMood}
           onMoodChange={setSelectedMood}
+          onDeleteEntry={handleDeleteEntry}
         />
 
         <MainDashboard 

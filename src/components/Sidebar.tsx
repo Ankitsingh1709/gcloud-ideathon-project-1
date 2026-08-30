@@ -4,6 +4,7 @@ import {
   LogOut, Plus, Search, BookOpen, 
   Calendar, Hash, Smile, Sparkles, FilterX 
 } from 'lucide-react';
+import SidebarEntryItem from './SidebarEntryItem';
 
 interface SidebarProps {
   user: UserProfile;
@@ -18,6 +19,7 @@ interface SidebarProps {
   onCategoryChange: (category: string) => void;
   selectedMood: string;
   onMoodChange: (mood: string) => void;
+  onDeleteEntry: (id: string) => void;
 }
 
 export default function Sidebar({
@@ -32,7 +34,8 @@ export default function Sidebar({
   selectedCategory,
   onCategoryChange,
   selectedMood,
-  onMoodChange
+  onMoodChange,
+  onDeleteEntry
 }: SidebarProps) {
 
   // Extract all unique categories and moods
@@ -201,56 +204,16 @@ export default function Sidebar({
           </div>
         ) : (
           <div className="space-y-1">
-            {filteredEntries.map(entry => {
-              const isSelected = entry.id === selectedEntryId;
-              const snippet = entry.messages[0]?.content || 'Empty Reflection';
-              return (
-                <button
-                  key={entry.id}
-                  onClick={() => onSelectEntry(entry.id)}
-                  className={`w-full text-left p-3 rounded-2xl transition duration-150 flex flex-col space-y-1.5 border cursor-pointer ${
-                    isSelected 
-                      ? 'bg-[#1e1e1e] border-[#333] shadow-md' 
-                      : 'bg-transparent border-transparent hover:bg-[#1a1a1a]'
-                  }`}
-                >
-                  <div className="flex items-center justify-between">
-                    <span className={`text-xs font-semibold ${isSelected ? 'text-[#8b5cf6]' : 'text-[#666]'} flex items-center`}>
-                      <Calendar className="w-3 h-3 mr-1" />
-                      {formatDate(entry.createdAt)}
-                    </span>
-                    {entry.isDraft && (
-                      <span className="text-[10px] bg-[#1a1a1a] text-[#888] px-1.5 py-0.5 rounded-full border border-[#2a2a2a]">
-                        Draft
-                      </span>
-                    )}
-                  </div>
-                  
-                  <h4 className="font-semibold text-white text-sm line-clamp-1">
-                    {entry.title || 'Untitled reflection'}
-                  </h4>
-
-                  <p className="text-xs text-[#888] line-clamp-2 leading-relaxed">
-                    {snippet}
-                  </p>
-
-                  <div className="flex items-center space-x-1.5 pt-0.5">
-                    {entry.category && (
-                      <span className="text-[10px] font-medium text-[#ccc] bg-[#1e1e1e] border border-[#333] px-1.5 py-0.5 rounded-md flex items-center">
-                        <Hash className="w-2.5 h-2.5 mr-0.5 text-[#666]" />
-                        {entry.category}
-                      </span>
-                    )}
-                    {entry.mood && (
-                      <span className={`text-[10px] font-semibold border px-1.5 py-0.5 rounded-md flex items-center ${getMoodColor(entry.mood)}`}>
-                        <Smile className="w-2.5 h-2.5 mr-0.5 opacity-85" />
-                        {entry.mood}
-                      </span>
-                    )}
-                  </div>
-                </button>
-              );
-            })}
+            {filteredEntries.map(entry => (
+              <SidebarEntryItem
+                key={entry.id}
+                entry={entry}
+                isSelected={entry.id === selectedEntryId}
+                onSelect={() => onSelectEntry(entry.id)}
+                onDelete={() => onDeleteEntry(entry.id)}
+                getMoodColor={getMoodColor}
+              />
+            ))}
           </div>
         )}
       </div>

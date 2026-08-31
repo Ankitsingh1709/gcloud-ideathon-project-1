@@ -129,7 +129,15 @@ console.log('===========================================================');
   const validKey = 'AIza' + 'a1b2c3d4e5f6'.padEnd(35, 'z');
   const req: any = { headers: { 'x-gemini-key': validKey } };
   run(extractByokKey, req);
-  assert(req.byokKey === validKey, 'A well-formed BYOK header is accepted');
+  assert(req.byokKey === validKey, 'A well-formed legacy BYOK header is accepted');
+}
+
+{
+  // The format this project's own key actually uses.
+  const modernKey = 'AQ.Ab8' + 'a1b2c3'.padEnd(47, 'z');
+  const req: any = { headers: { 'x-gemini-key': modernKey } };
+  run(extractByokKey, req);
+  assert(req.byokKey === modernKey, 'A modern AQ. BYOK header is accepted');
 }
 
 {
@@ -162,12 +170,20 @@ console.log('===========================================================');
 
 // --- safeMessage (key redaction) --------------------------------------------
 {
-  // Built rather than hardcoded so the length always matches the 39-char shape.
-  const fakeKey = 'AIza' + 'FAKE'.padEnd(35, '0');
-  const leaky = new Error(`request failed with key ${fakeKey} appended`);
+  // Google issues two key formats. Both must be redacted, and a miss here is
+  // a real leak: the newer AQ. format was originally not matched at all.
+  const legacyKey = 'AIza' + 'FAKE'.padEnd(35, '0');
+  const modernKey = 'AQ.Ab8' + 'FAKE'.padEnd(47, '0');
+  assert(legacyKey.length === 39, 'The legacy sample key has the real 39-character shape');
+  assert(modernKey.length === 53, 'The modern sample key has the real 53-character shape');
+
+  const modernScrubbed = safeMessage(new Error(`upstream rejected ${modernKey} at /v1beta`));
+  assert(!modernScrubbed.includes(modernKey), 'A modern AQ. key is never echoed in an error message');
+  assert(!modernScrubbed.includes('FAKE'), 'No fragment of a modern key survives redaction');
+
+  const leaky = new Error(`request failed with key ${legacyKey} appended`);
   const scrubbed = safeMessage(leaky);
-  assert(fakeKey.length === 39, 'The sample key has the real 39-character shape');
-  assert(!scrubbed.includes(fakeKey), 'An API key is never echoed in an error message');
+  assert(!scrubbed.includes(legacyKey), 'An API key is never echoed in an error message');
   assert(scrubbed.includes('REDACTED'), 'The redacted key is visibly marked');
   assert(safeMessage(null) === 'Unknown error', 'A null error degrades to a safe string');
 }

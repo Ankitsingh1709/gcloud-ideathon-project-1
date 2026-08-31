@@ -119,7 +119,14 @@ export function requireAdminRole(req: any, res: any, next: any) {
 // A user may optionally supply their own Gemini key. It is used for that single
 // request and is never logged, never persisted, and never echoed in an error.
 // Absent or malformed, we fall through to the Secret Manager key.
-const GEMINI_KEY_SHAPE = /^AIza[A-Za-z0-9_-]{35}$/;
+// Google issues two key formats: the legacy 39-character "AIza…" key and the
+// newer "AQ.…" key (53 chars, contains dots). Matching only the legacy shape
+// silently rejected every modern key.
+const GEMINI_KEY_SHAPE = /^(?:AIza[A-Za-z0-9_-]{35}|AQ\.[A-Za-z0-9_.-]{16,})$/;
+
+// Unanchored twin used for redaction. Over-matching is safe here;
+// under-matching leaks a key.
+const GEMINI_KEY_ANYWHERE = /(?:AIza[A-Za-z0-9_-]{35}|AQ\.[A-Za-z0-9_.-]{16,})/g;
 
 export function extractByokKey(req: any, _res: any, next: any) {
   const supplied = req.headers['x-gemini-key'];
@@ -132,7 +139,7 @@ export function extractByokKey(req: any, _res: any, next: any) {
 // Never let a key — ours or the caller's — escape inside an error payload.
 export function safeMessage(err: any): string {
   return String(err?.message || err || 'Unknown error')
-    .replace(/AIza[A-Za-z0-9_-]{35}/g, 'AIza***REDACTED***');
+    .replace(GEMINI_KEY_ANYWHERE, '***REDACTED***');
 }
 
 // --- Per-user rate limiting -------------------------------------------------

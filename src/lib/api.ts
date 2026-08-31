@@ -9,7 +9,7 @@ import { auth } from './firebase';
 const BYOK_STORAGE_KEY = 'reflect.byokGeminiKey';
 
 /** Shape check only — the server re-validates before trusting anything. */
-export const GEMINI_KEY_SHAPE = /^AIza[A-Za-z0-9_-]{35}$/;
+export const GEMINI_KEY_SHAPE = /^(?:AIza[A-Za-z0-9_-]{35}|AQ\.[A-Za-z0-9_.-]{16,})$/;
 
 /**
  * The user's own Gemini key lives in localStorage and nowhere else. It is

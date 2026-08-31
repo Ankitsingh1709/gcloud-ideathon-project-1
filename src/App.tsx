@@ -82,7 +82,11 @@ export default function App() {
           category: data.category || '',
           mood: data.mood || '',
           isDraft: data.isDraft !== undefined ? data.isDraft : true,
-          location: data.location || undefined
+          location: data.location || undefined,
+          // This parser copies fields one by one, so anything not named here
+          // is silently dropped on read even though it is stored correctly.
+          // Omitting `embedding` left semantic search with nothing to rank.
+          embedding: Array.isArray(data.embedding) ? data.embedding : undefined
         });
       });
       setEntries(loadedEntries);

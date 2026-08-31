@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { APIProvider, Map, Marker } from '@vis.gl/react-google-maps';
+import { APIProvider, Map, Marker, useMap } from '@vis.gl/react-google-maps';
 import { MapPin, Check, AlertCircle, RefreshCw, LocateFixed, Loader2 } from 'lucide-react';
 import { LocationData } from '../types';
 
@@ -19,6 +19,24 @@ if (typeof window !== 'undefined') {
     mapsAuthHasFailed = true;
     mapsAuthFailureListeners.forEach(notify => notify());
   };
+}
+
+/**
+ * <Map defaultCenter> is uncontrolled — it only applies on the first render.
+ * Without this, picking a location (or hitting "use my current location")
+ * dropped the marker at the right coordinates while the viewport stayed on
+ * the default centre, which looked exactly like nothing had happened.
+ */
+function RecenterOnLocation({ location }: { location?: LocationData }) {
+  const map = useMap();
+
+  useEffect(() => {
+    if (!map || !location) return;
+    map.panTo({ lat: location.lat, lng: location.lng });
+    map.setZoom(15);
+  }, [map, location?.lat, location?.lng]);
+
+  return null;
 }
 
 interface MapPickerProps {
@@ -190,9 +208,10 @@ export default function MapPicker({ location, onChange }: MapPickerProps) {
               className="w-full h-full"
               internalUsageAttributionIds={['gmp_mcp_codeassist_v1_aistudio']}
             >
+              <RecenterOnLocation location={location} />
               {location && (
-                <Marker 
-                  position={{ lat: location.lat, lng: location.lng }} 
+                <Marker
+                  position={{ lat: location.lat, lng: location.lng }}
                 />
               )}
             </Map>

@@ -86,7 +86,15 @@ service cloud.firestore {
     // clause here, by design.
     match /users/{userId}/entries/{entryId} {
       allow read: if isOwner(userId);
-      allow write: if isOwner(userId) && hasValidLocation() && isWithinSizeBounds();
+
+      // create/update and delete must be granted separately. `write` covers
+      // all three, but on a delete there is no incoming document, so
+      // request.resource is null and any validation helper that reads
+      // request.resource.data fails — which silently denied every deletion.
+      allow create, update: if isOwner(userId)
+                            && hasValidLocation()
+                            && isWithinSizeBounds();
+      allow delete: if isOwner(userId);
     }
   }
 }

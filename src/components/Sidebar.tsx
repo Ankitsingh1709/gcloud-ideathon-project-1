@@ -1,8 +1,11 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { JournalEntry, UserProfile } from '../types';
+import { postJson, getStoredByokKey, setStoredByokKey, GEMINI_KEY_SHAPE } from '../lib/api';
+import { cosineSimilarity } from '../lib/vector';
 import { 
   LogOut, Plus, Search, BookOpen, 
-  Calendar, Hash, Smile, Sparkles, FilterX, BrainCircuit, ShieldAlert
+  Calendar, Hash, Smile, Sparkles, FilterX, BrainCircuit, ShieldAlert,
+  KeyRound, Loader2, Type as TypeIcon
 } from 'lucide-react';
 import SidebarEntryItem from './SidebarEntryItem';
 
@@ -41,6 +44,58 @@ export default function Sidebar({
   currentView = 'workspace',
   onViewChange
 }: SidebarProps) {
+
+  // --- Semantic memory search ---------------------------------------------
+  // Keyword search filters locally; meaning search embeds the query and ranks
+  // entries by cosine similarity against the vectors already in memory.
+  const [semanticMode, setSemanticMode] = useState(false);
+  const [semanticResults, setSemanticResults] = useState<{ entry: JournalEntry; score: number }[] | null>(null);
+  const [semanticLoading, setSemanticLoading] = useState(false);
+  const [semanticError, setSemanticError] = useState<string | null>(null);
+
+  // --- Bring your own key --------------------------------------------------
+  const [showKeyPanel, setShowKeyPanel] = useState(false);
+  const [byokDraft, setByokDraft] = useState(getStoredByokKey() || '');
+  const [byokSaved, setByokSaved] = useState(Boolean(getStoredByokKey()));
+
+  const indexedEntries = entries.filter(e => Array.isArray(e.embedding) && e.embedding.length > 0);
+
+  const runSemanticSearch = async () => {
+    const queryText = searchQuery.trim();
+    if (!queryText || semanticLoading) return;
+
+    if (indexedEntries.length === 0) {
+      setSemanticError('Nothing is indexed yet. Run "Synthesize & Catalog" on an entry to make it searchable.');
+      setSemanticResults([]);
+      return;
+    }
+
+    setSemanticLoading(true);
+    setSemanticError(null);
+    try {
+      const { embedding } = await postJson<{ embedding: number[] }>('/api/gemini/embed', { text: queryText });
+      // ponytail: O(n) scan over entries already in React state. Revisit only
+      // if a single user ever accumulates thousands of entries.
+      const ranked = indexedEntries
+        .map(entry => ({ entry, score: cosineSimilarity(embedding, entry.embedding as number[]) }))
+        .sort((a, b) => b.score - a.score)
+        .slice(0, 5);
+      setSemanticResults(ranked);
+    } catch (err: any) {
+      setSemanticError(err?.message || 'Semantic search failed.');
+      setSemanticResults(null);
+    } finally {
+      setSemanticLoading(false);
+    }
+  };
+
+  const saveByokKey = () => {
+    const trimmed = byokDraft.trim();
+    if (trimmed && !GEMINI_KEY_SHAPE.test(trimmed)) return;
+    setStoredByokKey(trimmed || null);
+    setByokSaved(Boolean(trimmed));
+    setShowKeyPanel(false);
+  };
 
   // Extract all unique categories and moods
   const categories = Array.from(new Set(entries.map(e => e.category).filter(Boolean)));
@@ -83,6 +138,8 @@ export default function Sidebar({
     onCategoryChange('');
     onMoodChange('');
     onSearchChange('');
+    setSemanticResults(null);
+    setSemanticError(null);
   };
 
   return (
@@ -148,17 +205,72 @@ export default function Sidebar({
       </div>
 
       {/* Search Input */}
-      <div className="px-4 pt-4 pb-2">
+      <div className="px-4 pt-4 pb-2 space-y-2">
         <div className="relative">
-          <Search className="absolute left-3 top-2.5 h-4 w-4 text-[#666]" />
+          {semanticLoading
+            ? <Loader2 className="absolute left-3 top-2.5 h-4 w-4 text-[#8b5cf6] animate-spin" />
+            : <Search className="absolute left-3 top-2.5 h-4 w-4 text-[#666]" />}
           <input
             type="text"
-            placeholder="Search reflections..."
+            placeholder={semanticMode ? 'When have I felt like this before?' : 'Search reflections...'}
             value={searchQuery}
-            onChange={(e) => onSearchChange(e.target.value)}
+            onChange={(e) => {
+              onSearchChange(e.target.value);
+              if (semanticMode) { setSemanticResults(null); setSemanticError(null); }
+            }}
+            onKeyDown={(e) => {
+              if (semanticMode && e.key === 'Enter') {
+                e.preventDefault();
+                runSemanticSearch();
+              }
+            }}
             className="w-full pl-9 pr-4 py-2 border border-[#333] rounded-xl text-sm placeholder-[#555] text-[#ccc] focus:outline-none focus:border-[#8b5cf6] bg-[#1a1a1a] transition"
           />
         </div>
+
+        {/* Keyword vs meaning */}
+        <div className="flex items-center gap-1 bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl p-0.5" role="group" aria-label="Search mode">
+          <button
+            type="button"
+            onClick={() => { setSemanticMode(false); setSemanticResults(null); setSemanticError(null); }}
+            aria-pressed={!semanticMode}
+            className={`flex-1 flex items-center justify-center gap-1 py-1.5 rounded-lg text-[11px] font-bold transition cursor-pointer ${
+              !semanticMode ? 'bg-[#252525] text-white' : 'text-[#666] hover:text-[#aaa]'
+            }`}
+          >
+            <TypeIcon className="w-3 h-3" />
+            <span>Keyword</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setSemanticMode(true)}
+            aria-pressed={semanticMode}
+            className={`flex-1 flex items-center justify-center gap-1 py-1.5 rounded-lg text-[11px] font-bold transition cursor-pointer ${
+              semanticMode ? 'bg-[#2a1f3d] text-[#c4b5fd] border border-[#4c1d95]/40' : 'text-[#666] hover:text-[#aaa]'
+            }`}
+          >
+            <BrainCircuit className="w-3 h-3" />
+            <span>Meaning</span>
+          </button>
+        </div>
+
+        {semanticMode && (
+          <div className="flex items-center justify-between text-[10px] text-[#555] px-0.5">
+            <span>{indexedEntries.length} of {entries.length} indexed</span>
+            <button
+              type="button"
+              onClick={runSemanticSearch}
+              disabled={!searchQuery.trim() || semanticLoading}
+              className="text-[#8b5cf6] hover:text-[#d946ef] font-bold disabled:opacity-40 cursor-pointer"
+            >
+              {semanticLoading ? 'Searching…' : 'Search ↵'}
+            </button>
+          </div>
+        )}
+
+        {semanticError && (
+          <p className="text-[10px] text-rose-400 leading-relaxed">{semanticError}</p>
+        )}
       </div>
 
       {/* Filter Stats/Cleanups */}
@@ -242,7 +354,34 @@ export default function Sidebar({
 
       {/* Entries List */}
       <div className="flex-1 overflow-y-auto px-2 py-2 border-t border-[#2a2a2a]" id="sidebar-entries-list">
-        {filteredEntries.length === 0 ? (
+        {semanticMode && semanticResults ? (
+          semanticResults.length === 0 ? (
+            <div className="py-12 px-4 text-center">
+              <BrainCircuit className="w-8 h-8 text-[#333] mx-auto mb-2" />
+              <p className="text-sm font-medium text-[#888]">No related reflections</p>
+            </div>
+          ) : (
+            <div className="space-y-1">
+              <p className="text-[10px] uppercase tracking-wider font-bold text-[#666] px-2 pb-1">
+                Closest in meaning
+              </p>
+              {semanticResults.map(({ entry, score }) => (
+                <div key={entry.id} className="relative">
+                  <span className="absolute right-2 top-2 z-10 text-[9px] font-bold text-[#8b5cf6] bg-[#1e1b26] border border-[#4c1d95]/30 px-1.5 py-0.5 rounded-full pointer-events-none">
+                    {(score * 100).toFixed(0)}%
+                  </span>
+                  <SidebarEntryItem
+                    entry={entry}
+                    isSelected={entry.id === selectedEntryId}
+                    onSelect={() => onSelectEntry(entry.id)}
+                    onDelete={() => onDeleteEntry(entry.id)}
+                    getMoodColor={getMoodColor}
+                  />
+                </div>
+              ))}
+            </div>
+          )
+        ) : filteredEntries.length === 0 ? (
           <div className="py-12 px-4 text-center">
             <BookOpen className="w-8 h-8 text-[#333] mx-auto mb-2" />
             <p className="text-sm font-medium text-[#888]">No reflections yet</p>
@@ -260,6 +399,63 @@ export default function Sidebar({
                 getMoodColor={getMoodColor}
               />
             ))}
+          </div>
+        )}
+      </div>
+
+      {/* Bring your own Gemini key */}
+      <div className="px-4 pt-3 border-t border-[#2a2a2a]">
+        <button
+          type="button"
+          onClick={() => setShowKeyPanel(v => !v)}
+          className="w-full flex items-center justify-between text-[11px] font-bold text-[#666] hover:text-[#aaa] transition cursor-pointer"
+          aria-expanded={showKeyPanel}
+        >
+          <span className="flex items-center gap-1.5">
+            <KeyRound className="w-3.5 h-3.5" />
+            <span>Gemini API key</span>
+          </span>
+          <span className={byokSaved ? 'text-emerald-400' : 'text-[#555]'}>
+            {byokSaved ? 'Yours' : 'Managed'}
+          </span>
+        </button>
+
+        {showKeyPanel && (
+          <div className="mt-2 space-y-2">
+            <input
+              type="password"
+              value={byokDraft}
+              onChange={(e) => setByokDraft(e.target.value)}
+              placeholder="AIza…"
+              aria-label="Your Gemini API key"
+              className="w-full px-3 py-1.5 bg-[#1a1a1a] border border-[#333] rounded-lg text-[11px] text-[#ccc] placeholder-[#444] focus:outline-none focus:border-[#8b5cf6] font-mono"
+            />
+            {byokDraft.trim() && !GEMINI_KEY_SHAPE.test(byokDraft.trim()) && (
+              <p className="text-[10px] text-rose-400">That does not look like a Gemini API key.</p>
+            )}
+            <p className="text-[10px] text-[#555] leading-relaxed">
+              Optional. Stored only in this browser — never written to the database.
+              It is sent solely to call Gemini on your behalf. Leave empty to use the
+              app's managed key from Secret Manager.
+            </p>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={saveByokKey}
+                className="flex-1 bg-[#8b5cf6] hover:bg-[#7c3aed] text-white text-[11px] font-bold py-1.5 rounded-lg transition cursor-pointer"
+              >
+                Save
+              </button>
+              {byokSaved && (
+                <button
+                  type="button"
+                  onClick={() => { setByokDraft(''); setStoredByokKey(null); setByokSaved(false); }}
+                  className="px-3 bg-[#1a1a1a] border border-[#333] text-[#888] hover:text-[#ccc] text-[11px] font-bold py-1.5 rounded-lg transition cursor-pointer"
+                >
+                  Clear
+                </button>
+              )}
+            </div>
           </div>
         )}
       </div>

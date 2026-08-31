@@ -21,6 +21,11 @@ export interface JournalEntry {
   mood: string;
   isDraft: boolean;
   location?: LocationData;
+  /**
+   * Unit-length gemini-embedding-001 vector (768 dims) of the entry's text,
+   * written when the entry is synthesized. Powers semantic memory search.
+   */
+  embedding?: number[];
 }
 
 export interface UserProfile {

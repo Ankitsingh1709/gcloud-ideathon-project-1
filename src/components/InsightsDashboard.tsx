@@ -1,8 +1,10 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { JournalEntry } from '../types';
+import { postJson } from '../lib/api';
 import { 
   Sparkles, Calendar, BookOpen, BrainCircuit, Heart, 
-  TrendingUp, BarChart2, CheckCircle2, ShieldCheck, Flame, PieChart
+  TrendingUp, BarChart2, CheckCircle2, ShieldCheck, Flame, PieChart,
+  Mail, Loader2, AlertTriangle
 } from 'lucide-react';
 import { 
   ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, 
@@ -183,6 +185,41 @@ export default function InsightsDashboard({ entries }: InsightsDashboardProps) {
   // Color scheme constants matched to our luxury dark palette
   const accentColors = ['#8b5cf6', '#d946ef', '#10b981', '#f59e0b', '#3b82f6'];
 
+  // --- Weekly digest --------------------------------------------------------
+  // Generated on demand and held in component state. Only entry METADATA is
+  // sent; the server re-projects it to five fields, so journal bodies never
+  // reach the model through this route.
+  const [digest, setDigest] = useState<string | null>(null);
+  const [digestLoading, setDigestLoading] = useState(false);
+  const [digestError, setDigestError] = useState<string | null>(null);
+
+  const [digestPeriod, setDigestPeriod] = useState<'week' | 'all'>('week');
+
+  const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
+  const cataloguedEntries = entries.filter(e => !e.isDraft && (e.summary || e.title));
+  const thisWeekEntries = cataloguedEntries.filter(e => Date.now() - e.createdAt <= WEEK_MS);
+  const digestCandidates = digestPeriod === 'week' ? thisWeekEntries : cataloguedEntries;
+
+  const generateDigest = async () => {
+    if (digestLoading || digestCandidates.length === 0) return;
+    setDigestLoading(true);
+    setDigestError(null);
+    try {
+      const payload = digestCandidates
+        .slice(0, 30)
+        .map(({ createdAt, title, summary, mood, category }) => ({ createdAt, title, summary, mood, category }));
+      const result = await postJson<{ digest: string }>('/api/gemini/digest', {
+        entries: payload,
+        period: digestPeriod,
+      });
+      setDigest(result.digest);
+    } catch (err: any) {
+      setDigestError(err?.message || 'Could not generate your digest. Please try again.');
+    } finally {
+      setDigestLoading(false);
+    }
+  };
+
   return (
     <div className="flex-1 flex flex-col bg-[#0a0a0a] overflow-y-auto p-8 space-y-8" id="insights-dashboard-root">
       {/* Tab Header Header */}
@@ -200,6 +237,72 @@ export default function InsightsDashboard({ entries }: InsightsDashboardProps) {
           <ShieldCheck className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
           <span>Private uid-scoped queries only</span>
         </div>
+      </div>
+
+      {/* Weekly Digest — a letter Gemini writes back to you */}
+      <div className="bg-gradient-to-br from-[#140f1f] to-[#0c0c0c] border border-[#4c1d95]/30 rounded-2xl p-6 space-y-4 text-left" id="weekly-digest-panel">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="space-y-1">
+            <div className="flex items-center space-x-2">
+              <Mail className="w-4 h-4 text-[#d946ef]" />
+              <h2 className="text-sm font-bold text-white tracking-tight">
+                {digestPeriod === 'week' ? 'Your Week in Review' : 'Your Journal So Far'}
+              </h2>
+            </div>
+            <p className="text-[11px] text-[#888] leading-relaxed max-w-xl">
+              Gemini reads the shape of your entries — dates, moods, categories and one-line
+              summaries — and writes back. Full journal text never leaves your browser for this.
+            </p>
+            <div className="flex items-center gap-1 bg-[#0c0c0c] border border-[#2a2a2a] rounded-lg p-0.5 w-fit" role="group" aria-label="Digest period">
+              {([['week', `This week (${thisWeekEntries.length})`], ['all', `All time (${cataloguedEntries.length})`]] as const).map(([value, label]) => (
+                <button
+                  key={value}
+                  type="button"
+                  onClick={() => { setDigestPeriod(value); setDigest(null); setDigestError(null); }}
+                  aria-pressed={digestPeriod === value}
+                  className={`px-2.5 py-1 rounded-md text-[10px] font-bold transition cursor-pointer ${
+                    digestPeriod === value ? 'bg-[#2a1f3d] text-[#c4b5fd]' : 'text-[#666] hover:text-[#aaa]'
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={generateDigest}
+            disabled={digestLoading || digestCandidates.length === 0}
+            id="generate-digest-btn"
+            className="shrink-0 inline-flex items-center justify-center space-x-2 bg-[#8b5cf6] hover:bg-[#7c3aed] disabled:opacity-40 text-white font-bold text-xs px-4 py-2.5 rounded-xl transition cursor-pointer"
+          >
+            {digestLoading
+              ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              : <Sparkles className="w-3.5 h-3.5" />}
+            <span>{digestLoading ? 'Writing…' : digest ? 'Write a new one' : 'Write my letter'}</span>
+          </button>
+        </div>
+
+        {digestCandidates.length === 0 && (
+          <p className="text-[11px] text-[#666]">
+            {digestPeriod === 'week' && cataloguedEntries.length > 0
+              ? <>No catalogued reflections in the past seven days. Switch to <strong>All time</strong> to look further back.</>
+              : <>Catalog at least one reflection to unlock your letter.</>}
+          </p>
+        )}
+
+        {digestError && (
+          <div className="flex items-start space-x-2 text-rose-300 bg-rose-950/20 border border-rose-900/40 rounded-xl p-3">
+            <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5 text-rose-400" />
+            <p className="text-[11px] leading-relaxed">{digestError}</p>
+          </div>
+        )}
+
+        {digest && (
+          <p className="text-sm text-[#ddd] leading-relaxed whitespace-pre-wrap border-t border-[#2a2a2a] pt-4">
+            {digest}
+          </p>
+        )}
       </div>
 
       {/* Hero Stats Panel */}

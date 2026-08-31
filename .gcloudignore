@@ -1,0 +1,23 @@
+# Files not uploaded to Cloud Build. Explicit, so `gcloud run deploy --source .`
+# never falls back to .gitignore semantics and never ships a local secret.
+.git/
+.gitignore
+node_modules/
+dist/
+build/
+coverage/
+*.log
+.DS_Store
+
+# Local secrets — must never enter the build context.
+.env
+.env.*
+!.env.example
+firebase-applet-config.json
+
+# Local tooling / docs not needed at runtime.
+.claude/
+.graft/
+.impeccable/
+CLAUDE.md
+CLAUDE_SKILLS.txt

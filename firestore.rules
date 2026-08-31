@@ -7,31 +7,86 @@ service cloud.firestore {
     // would be inert here, since allow rules are OR'd across matching paths and
     // a `false` in one match cannot override an allow in another.
 
-    // Admin-only collections/paths require custom claim role == 'admin'
-    match /admin_data/{docId} {
-      allow read, write: if request.auth != null && request.auth.token.role == 'admin';
+    function isSignedIn() {
+      return request.auth != null;
     }
 
-    match /users/{userId} {
-      allow read, write: if request.auth != null && (request.auth.uid == userId || request.auth.token.role == 'admin');
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
     }
-    
+
+    // Role comes from a custom claim minted by the Admin SDK
+    // (scripts/bootstrap-admin.ts). A client cannot set its own claim.
+    function isAdmin() {
+      return isSignedIn() && request.auth.token.role == 'admin';
+    }
+
+    // Coordinates must be real coordinates, not arbitrary numbers.
+    function hasValidLocation() {
+      return !('location' in request.resource.data)
+        || request.resource.data.location == null
+        || (
+          request.resource.data.location.lat is number &&
+          request.resource.data.location.lat >= -90 &&
+          request.resource.data.location.lat <= 90 &&
+          request.resource.data.location.lng is number &&
+          request.resource.data.location.lng >= -180 &&
+          request.resource.data.location.lng <= 180 &&
+          (!('placeName' in request.resource.data.location)
+            || request.resource.data.location.placeName == null
+            || request.resource.data.location.placeName is string)
+        );
+    }
+
+    // Bound the document so a signed-in user cannot stuff megabytes into
+    // their own subcollection. Every field below is written as a string or a
+    // list by the client, so the type check is a schema guarantee, not a
+    // convenience.
+    function isWithinSizeBounds() {
+      return (!('messages' in request.resource.data)
+          || (request.resource.data.messages is list
+              && request.resource.data.messages.size() <= 200))
+        && (!('title' in request.resource.data)
+          || (request.resource.data.title is string
+              && request.resource.data.title.size() <= 200))
+        && (!('summary' in request.resource.data)
+          || (request.resource.data.summary is string
+              && request.resource.data.summary.size() <= 2000))
+        // Semantic search embedding: gemini-embedding-001 at 768 dimensions.
+        // The client sanitizer rewrites undefined to null, so an entry that has
+        // not been catalogued yet arrives with embedding == null. That must be
+        // allowed, or every pre-catalogue save is rejected.
+        && (!('embedding' in request.resource.data)
+          || request.resource.data.embedding == null
+          || (request.resource.data.embedding is list
+              && request.resource.data.embedding.size() <= 768));
+    }
+
+    // --- Admin scope --------------------------------------------------------
+    // PRIVACY BY DESIGN: an admin can read operational metadata (which
+    // accounts exist) but has NO read path to journal content. On an app whose
+    // entire premise is private reflection, an "admin can read everything"
+    // rule is a diary backdoor, not an administrative convenience. Admin
+    // capability is limited to the profile document below and to the
+    // server-side /api/admin/* routes, which return uptime and rate-limit
+    // counters only.
+
+    match /admin_data/{docId} {
+      allow read, write: if isAdmin();
+    }
+
+    // Profile document: the owner controls it; an admin may read the metadata
+    // (uid / email / displayName) but may never write to it.
+    match /users/{userId} {
+      allow read: if isOwner(userId) || isAdmin();
+      allow write: if isOwner(userId);
+    }
+
+    // Journal entries: strictly owner-only, in both directions. No admin
+    // clause here, by design.
     match /users/{userId}/entries/{entryId} {
-      allow read: if request.auth != null && (request.auth.uid == userId || request.auth.token.role == 'admin');
-      allow write: if request.auth != null && (request.auth.uid == userId || request.auth.token.role == 'admin')
-                   && (request.auth.token.role == 'admin' || (!('location' in request.resource.data) || (
-                     request.resource.data.location == null || (
-                       request.resource.data.location.lat is number &&
-                       request.resource.data.location.lat >= -90 &&
-                       request.resource.data.location.lat <= 90 &&
-                       request.resource.data.location.lng is number &&
-                       request.resource.data.location.lng >= -180 &&
-                       request.resource.data.location.lng <= 180 &&
-                       (!('placeName' in request.resource.data.location) || 
-                        request.resource.data.location.placeName is string || 
-                        request.resource.data.location.placeName == null)
-                     )
-                   )));
+      allow read: if isOwner(userId);
+      allow write: if isOwner(userId) && hasValidLocation() && isWithinSizeBounds();
     }
   }
 }

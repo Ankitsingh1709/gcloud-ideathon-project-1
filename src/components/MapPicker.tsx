@@ -1,7 +1,25 @@
 import React, { useState, useEffect } from 'react';
 import { APIProvider, Map, Marker } from '@vis.gl/react-google-maps';
-import { MapPin, Check, AlertCircle, RefreshCw } from 'lucide-react';
+import { MapPin, Check, AlertCircle, RefreshCw, LocateFixed, Loader2 } from 'lucide-react';
 import { LocationData } from '../types';
+
+/**
+ * The Maps JS API reports an authentication failure — rejected key, blocked
+ * referrer, disabled API, or billing not enabled on the project — only by
+ * calling this one global. Without it the SDK paints its own grey
+ * "This page can't load Google Maps correctly" dialog inside our layout.
+ *
+ * Module-level so a picker mounted after the failure already knows.
+ */
+let mapsAuthHasFailed = false;
+const mapsAuthFailureListeners = new Set<() => void>();
+
+if (typeof window !== 'undefined') {
+  (window as any).gm_authFailure = () => {
+    mapsAuthHasFailed = true;
+    mapsAuthFailureListeners.forEach(notify => notify());
+  };
+}
 
 interface MapPickerProps {
   location?: LocationData;
@@ -14,9 +32,20 @@ export default function MapPicker({ location, onChange }: MapPickerProps) {
   const [lngInput, setLngInput] = useState(location?.lng?.toString() || '');
   const [placeInput, setPlaceInput] = useState(location?.placeName || '');
   const [validationError, setValidationError] = useState<string | null>(null);
+  const [mapsRejected, setMapsRejected] = useState(mapsAuthHasFailed);
+  const [locating, setLocating] = useState(false);
+  const [locateError, setLocateError] = useState<string | null>(null);
+  const [accuracyMeters, setAccuracyMeters] = useState<number | null>(null);
 
   // Read client-side build-time Google Maps API key
   const mapsApiKey = ((import.meta as any).env?.VITE_GOOGLE_MAPS_API_KEY as string) || '';
+
+  // Fall back to manual entry the moment Maps reports an auth failure.
+  useEffect(() => {
+    const onFailure = () => setMapsRejected(true);
+    mapsAuthFailureListeners.add(onFailure);
+    return () => { mapsAuthFailureListeners.delete(onFailure); };
+  }, []);
 
   // Keep input fields synchronized with prop changes
   useEffect(() => {
@@ -64,11 +93,51 @@ export default function MapPicker({ location, onChange }: MapPickerProps) {
     handleValidateAndSave(latInput, lngInput, placeInput);
   };
 
+  /**
+   * Live location from the native Geolocation API — no dependency, and
+   * independent of the Maps SDK, so it still works when the map itself cannot
+   * load. Requires a secure context (https, or localhost in development).
+   */
+  const useMyCurrentLocation = () => {
+    if (!('geolocation' in navigator)) {
+      setLocateError('This browser does not support location access.');
+      return;
+    }
+
+    setLocating(true);
+    setLocateError(null);
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const nextLat = position.coords.latitude.toFixed(6);
+        const nextLng = position.coords.longitude.toFixed(6);
+        setLatInput(nextLat);
+        setLngInput(nextLng);
+        setAccuracyMeters(Math.round(position.coords.accuracy));
+        handleValidateAndSave(nextLat, nextLng, placeInput);
+        setLocating(false);
+      },
+      (err) => {
+        setLocateError(
+          err.code === err.PERMISSION_DENIED
+            ? 'Location permission denied. You can still enter coordinates manually.'
+            : err.code === err.TIMEOUT
+              ? 'Timed out finding your location. Please try again or enter it manually.'
+              : 'Could not determine your location. Please enter it manually.'
+        );
+        setLocating(false);
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
+    );
+  };
+
   const handleClearLocation = () => {
     setLatInput('');
     setLngInput('');
     setPlaceInput('');
     setValidationError(null);
+    setLocateError(null);
+    setAccuracyMeters(null);
     onChange(undefined);
   };
 
@@ -110,7 +179,7 @@ export default function MapPicker({ location, onChange }: MapPickerProps) {
 
       {/* Interactive Google Map Frame */}
       <div className="relative w-full h-[180px] bg-[#0c0c0c] rounded-xl overflow-hidden border border-[#222]" id="google-map-frame-wrapper">
-        {mapsApiKey ? (
+        {mapsApiKey && !mapsRejected ? (
           <APIProvider apiKey={mapsApiKey}>
             <Map
               defaultZoom={12}
@@ -132,14 +201,45 @@ export default function MapPicker({ location, onChange }: MapPickerProps) {
           <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center space-y-2 bg-gradient-to-br from-[#0c0c0c] to-[#121212]">
             <MapPin className="w-8 h-8 text-[#333] shrink-0" />
             <div className="space-y-0.5">
-              <span className="text-[11px] font-bold text-[#888] block">Interactive Map Standby</span>
+              <span className="text-[11px] font-bold text-[#888] block">
+                {mapsRejected ? 'Interactive Map Unavailable' : 'Interactive Map Standby'}
+              </span>
               <p className="text-[9px] text-[#555] leading-relaxed max-w-xs">
-                To activate interactive clicking, add your restricted key to <strong>VITE_GOOGLE_MAPS_API_KEY</strong>. Manual entry below is fully operational.
+                {mapsRejected
+                  ? <>Google Maps rejected this key. Check that the Maps JavaScript API is enabled, that billing is active on the project, and that the key's referrer restrictions allow this domain. Manual entry below is fully operational.</>
+                  : <>To activate interactive clicking, add your restricted key to <strong>VITE_GOOGLE_MAPS_API_KEY</strong>. Manual entry below is fully operational.</>}
               </p>
             </div>
           </div>
         )}
       </div>
+
+      {/* Live location */}
+      <button
+        type="button"
+        onClick={useMyCurrentLocation}
+        disabled={locating}
+        id="use-my-location-btn"
+        className="w-full flex items-center justify-center space-x-1.5 bg-[#1e1b26] hover:bg-[#251f33] disabled:opacity-50 text-[#c4b5fd] border border-[#4c1d95]/40 font-bold text-[10px] py-2 rounded-xl transition cursor-pointer"
+      >
+        {locating
+          ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+          : <LocateFixed className="w-3.5 h-3.5" />}
+        <span>{locating ? 'Finding you…' : 'Use my current location'}</span>
+      </button>
+
+      {accuracyMeters !== null && !locateError && (
+        <p className="text-[9px] text-[#555] text-center -mt-1">
+          Accurate to about {accuracyMeters} m
+        </p>
+      )}
+
+      {locateError && (
+        <div className="flex items-start space-x-1.5 bg-amber-950/20 border border-amber-900/30 p-2.5 rounded-lg text-[10px] text-amber-300">
+          <AlertCircle className="w-3.5 h-3.5 shrink-0 text-amber-400 mt-0.5" />
+          <span>{locateError}</span>
+        </div>
+      )}
 
       {/* Coordinates Form Entry */}
       <div className="grid grid-cols-2 gap-3" id="map-picker-coordinates-form">

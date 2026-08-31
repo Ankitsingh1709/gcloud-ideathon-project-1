@@ -1,10 +1,11 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { JournalEntry, Message } from '../types';
-import { auth } from '../lib/firebase';
+import { postJson, postStream } from '../lib/api';
+import { useSpeechRecognition } from '../lib/useSpeechRecognition';
 import { 
   Sparkles, Send, Save, CheckCircle, AlertTriangle, 
   RefreshCw, Smile, Hash, BookOpen, BrainCircuit, Feather,
-  Calendar, Clock, ChevronDown, ChevronUp, Plus
+  Calendar, Clock, ChevronDown, ChevronUp, Plus, Mic
 } from 'lucide-react';
 import MapPicker from './MapPicker';
 
@@ -33,6 +34,15 @@ export default function MainDashboard({
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const [lastErrorMessage, setLastErrorMessage] = useState('');
   const [hasReflectionError, setHasReflectionError] = useState(false);
+
+  // The reply currently arriving token by token, before it is persisted.
+  const [streamingText, setStreamingText] = useState('');
+
+  // Voice journaling on the native Web Speech API: the browser transcribes,
+  // and only the resulting text is ever sent anywhere.
+  const voice = useSpeechRecognition((transcript: string) => {
+    setInputText(prev => (prev ? `${prev.trim()} ${transcript.trim()}` : transcript.trim()));
+  });
 
   const [localTitle, setLocalTitle] = useState('');
 
@@ -188,7 +198,7 @@ export default function MainDashboard({
   // Auto-scroll when messages update
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [entry?.messages, loadingReflection]);
+  }, [entry?.messages, loadingReflection, streamingText]);
 
   if (!entry) {
     return (
@@ -271,30 +281,32 @@ export default function MainDashboard({
       return;
     }
 
-    // 2. Fetch Reflection from Express backend proxy
+    // 2. Stream the reflection from the Express proxy.
     setLoadingReflection(true);
+    setStreamingText('');
     try {
-      const idToken = await auth.currentUser?.getIdToken();
-      if (!idToken) throw new Error('Authentication expired. Please sign in again.');
+      let streamed = '';
 
-      const response = await fetch('/api/gemini/reflect', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${idToken}`
-        },
-        body: JSON.stringify({ messages: updatedMessages })
-      });
-
-      if (!response.ok) {
-        const errData = await response.json().catch(() => ({}));
-        throw new Error(errData.error || 'Server failed to process reflection.');
+      try {
+        await postStream('/api/gemini/reflect/stream', { messages: updatedMessages }, (text) => {
+          streamed += text;
+          setStreamingText(streamed);
+        });
+      } catch (streamErr: any) {
+        // Falling back is only safe before anything reached the screen;
+        // retrying afterwards would replay text the user already watched.
+        if (streamed) throw streamErr;
+        const result = await postJson<{ response: string }>('/api/gemini/reflect', {
+          messages: updatedMessages
+        });
+        streamed = result.response;
       }
 
-      const result = await response.json();
+      if (!streamed) throw new Error('The reflection came back empty. Please try again.');
+
       const modelMessage: Message = {
         role: 'model',
-        content: result.response,
+        content: streamed,
         timestamp: Date.now()
       };
 
@@ -305,7 +317,7 @@ export default function MainDashboard({
         updatedAt: Date.now()
       };
 
-      // Save complete thread immediately
+      // One write at the end. Saving per chunk would be a write storm.
       await onSaveEntry(sanitizePayloadForFirebase(completedEntry));
       setSaveStatus('saved');
     } catch (err: any) {
@@ -315,6 +327,7 @@ export default function MainDashboard({
       setHasReflectionError(true);
     } finally {
       setLoadingReflection(false);
+      setStreamingText('');
     }
   };
 
@@ -326,24 +339,12 @@ export default function MainDashboard({
     setSaveStatus('saving');
 
     try {
-      const idToken = await auth.currentUser?.getIdToken();
-      if (!idToken) throw new Error('Authentication expired. Please sign in again.');
-
-      const response = await fetch('/api/gemini/reflect', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${idToken}`
-        },
-        body: JSON.stringify({ messages: entry.messages })
+      // Retry deliberately uses the non-streaming route: it walks the whole
+      // model fallback ladder, which is what a retry actually needs.
+      const result = await postJson<{ response: string }>('/api/gemini/reflect', {
+        messages: entry.messages
       });
 
-      if (!response.ok) {
-        const errData = await response.json().catch(() => ({}));
-        throw new Error(errData.error || 'Server failed to process reflection.');
-      }
-
-      const result = await response.json();
       const modelMessage: Message = {
         role: 'model',
         content: result.response,
@@ -376,36 +377,30 @@ export default function MainDashboard({
     setSaveStatus('saving');
 
     try {
-      const idToken = await auth.currentUser?.getIdToken();
-      if (!idToken) throw new Error('Session expired. Please log in.');
-
       // Bundle all message text to analyze
       const conversationText = entry.messages
         .map(m => `${m.role === 'user' ? 'User' : 'Gemini'}: ${m.content}`)
         .join('\n');
 
-      const response = await fetch('/api/gemini/analyze', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${idToken}`
-        },
-        body: JSON.stringify({ text: conversationText })
-      });
+      // Metadata and the search vector are produced together, so an entry
+      // becomes semantically searchable the moment it is catalogued.
+      const [meta, embeddingResult] = await Promise.all([
+        postJson<any>('/api/gemini/analyze', { text: conversationText }),
+        postJson<{ embedding: number[] }>('/api/gemini/embed', { text: conversationText })
+          .catch(err => {
+            // Search is an enhancement — never fail the save over it.
+            console.warn('Embedding failed; entry saved without semantic search:', err);
+            return null;
+          }),
+      ]);
 
-      if (!response.ok) {
-        const errData = await response.json().catch(() => ({}));
-        throw new Error(errData.error || 'Server failed to analyze conversation.');
-      }
-
-      const meta = await response.json();
-      
       const analyzedEntry: JournalEntry = {
         ...entry,
         title: meta.title || entry.title,
         summary: meta.summary || entry.summary,
         category: meta.category || entry.category,
         mood: meta.mood || entry.mood,
+        embedding: embeddingResult?.embedding || entry.embedding,
         isDraft: false, // Save finalized states
         updatedAt: Date.now()
       };
@@ -799,8 +794,24 @@ export default function MainDashboard({
                   );
                 })}
 
-                {/* Loading typing bubble */}
-                {loadingReflection && (
+                {/* Live reply, streaming in token by token */}
+                {streamingText && (
+                  <div className="flex justify-start">
+                    <div className="bg-[#121212] border border-[#2a2a2a] rounded-2xl rounded-bl-none px-5 py-4 max-w-2xl shadow-lg">
+                      <div className="font-semibold text-[10px] opacity-75 uppercase tracking-wider mb-1.5 text-[#8b5cf6] flex items-center space-x-1">
+                        <Sparkles className="w-3 h-3 text-[#d946ef]" />
+                        <span>Gemini</span>
+                      </div>
+                      <p className="text-sm text-[#ddd] whitespace-pre-wrap leading-relaxed">
+                        {streamingText}
+                        <span className="inline-block w-1.5 h-4 ml-0.5 -mb-0.5 align-middle bg-[#8b5cf6] animate-pulse" />
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Typing bubble — only until the first token lands */}
+                {loadingReflection && !streamingText && (
                   <div className="flex justify-start">
                     <div className="bg-[#121212] border border-[#2a2a2a] rounded-2xl rounded-bl-none px-5 py-4 max-w-xs shadow-lg">
                       <div className="font-semibold text-[10px] opacity-75 uppercase tracking-wider mb-1.5 text-[#8b5cf6] flex items-center space-x-1">
@@ -889,6 +900,23 @@ export default function MainDashboard({
                   }}
                 />
               </div>
+              {voice.supported && (
+                <button
+                  type="button"
+                  onClick={voice.toggle}
+                  title={voice.listening ? 'Stop dictation' : 'Dictate your reflection'}
+                  aria-label={voice.listening ? 'Stop dictation' : 'Dictate your reflection'}
+                  aria-pressed={voice.listening}
+                  id="voice-input-btn"
+                  className={`p-3.5 rounded-2xl border transition duration-150 shadow-lg cursor-pointer shrink-0 ${
+                    voice.listening
+                      ? 'bg-rose-500/20 border-rose-500/50 text-rose-300 animate-pulse'
+                      : 'bg-[#121212] border-[#2a2a2a] text-[#888] hover:text-[#ccc] hover:border-[#3a3a3a]'
+                  }`}
+                >
+                  <Mic className="w-4 h-4" />
+                </button>
+              )}
               <button
                 type="submit"
                 disabled={!inputText.trim() || loadingReflection}
@@ -898,6 +926,9 @@ export default function MainDashboard({
                 <Send className="w-4 h-4" />
               </button>
             </form>
+            {voice.error && (
+              <p className="max-w-3xl mx-auto text-[11px] text-rose-400 mt-2 px-1">{voice.error}</p>
+            )}
           </div>
         </div>
       </div>

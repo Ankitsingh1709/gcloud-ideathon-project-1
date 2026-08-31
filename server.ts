@@ -603,8 +603,31 @@ async function startServer() {
     app.use(vite.middlewares);
   } else {
     const distPath = path.join(process.cwd(), 'dist');
-    app.use(express.static(distPath));
-    app.get('*', (req, res) => {
+
+    // Cache policy matters here more than it looks. Vite gives every asset a
+    // content hash, so assets can be cached forever — but the HTML shell that
+    // POINTS at them must never be cached. A browser holding a previous
+    // deploy's index.html asks for asset filenames that no longer exist,
+    // which is a blank page for every returning user after each deploy.
+    app.use(express.static(distPath, {
+      setHeaders: (res, filePath) => {
+        if (filePath.endsWith('.html')) {
+          res.setHeader('Cache-Control', 'no-store, must-revalidate');
+        } else if (filePath.includes(`${path.sep}assets${path.sep}`)) {
+          res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+        }
+      },
+    }));
+
+    // A missing hashed asset must fail loudly. Without this it falls through
+    // to the SPA handler below and is answered with HTML, so the browser
+    // reports only "failed to load" for a script and renders nothing.
+    app.get('/assets/*', (_req, res) => {
+      res.status(404).json({ error: 'Asset not found.' });
+    });
+
+    app.get('*', (_req, res) => {
+      res.setHeader('Cache-Control', 'no-store, must-revalidate');
       res.sendFile(path.join(distPath, 'index.html'));
     });
   }

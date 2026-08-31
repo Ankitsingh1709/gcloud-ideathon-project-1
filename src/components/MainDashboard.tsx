@@ -217,7 +217,7 @@ export default function MainDashboard({
           <button
             onClick={onNewEntry}
             id="empty-state-new-entry-btn"
-            className="w-full bg-ember-500 hover:bg-ember-600 text-paper-50 font-semibold py-3 rounded-xl transition duration-150 shadow-lg hover:shadow-ember-500/20 cursor-pointer"
+            className="w-full bg-ember-500 hover:bg-ember-600 text-ink-950 font-semibold py-3 rounded-xl transition duration-150 shadow-lg hover:shadow-ember-500/20 cursor-pointer"
           >
             Create New Reflection
           </button>
@@ -515,7 +515,7 @@ export default function MainDashboard({
             onClick={handleManualSave}
             disabled={saveStatus === 'saving'}
             id="workspace-manual-save-btn"
-            className="flex items-center space-x-1.5 bg-ember-500 hover:bg-ember-600 text-paper-50 font-semibold text-xs px-3.5 py-2 rounded-xl transition disabled:opacity-50 cursor-pointer"
+            className="flex items-center space-x-1.5 bg-ember-500 hover:bg-ember-600 text-ink-950 font-semibold text-xs px-3.5 py-2 rounded-xl transition disabled:opacity-50 cursor-pointer"
           >
             <Save className="w-3.5 h-3.5" />
             <span>Save Thread</span>
@@ -693,7 +693,7 @@ export default function MainDashboard({
                           <button
                             type="button"
                             onClick={() => handleReflectOnPastEntry(match)}
-                            className="flex-1 text-center bg-ember-500 hover:bg-ember-600 text-paper-50 font-bold text-[10px] py-1.5 rounded-lg transition cursor-pointer inline-flex items-center justify-center space-x-1"
+                            className="flex-1 text-center bg-ember-500 hover:bg-ember-600 text-ink-950 font-bold text-[10px] py-1.5 rounded-lg transition cursor-pointer inline-flex items-center justify-center space-x-1"
                           >
                             <Sparkles className="w-3 h-3 text-ember-400" />
                             <span>Reflect</span>
@@ -834,7 +834,7 @@ export default function MainDashboard({
                         onClick={handleRetryReflection}
                         disabled={loadingReflection}
                         id="retry-reflection-bubble-btn"
-                        className="inline-flex items-center space-x-1.5 bg-ember-500 hover:bg-ember-600 text-paper-50 font-bold text-[11px] px-3 py-1.5 rounded-lg transition cursor-pointer"
+                        className="inline-flex items-center space-x-1.5 bg-ember-500 hover:bg-ember-600 text-ink-950 font-bold text-[11px] px-3 py-1.5 rounded-lg transition cursor-pointer"
                       >
                         <RefreshCw className={`w-3 h-3 ${loadingReflection ? 'animate-spin' : ''}`} />
                         <span>Retry Generation</span>
@@ -910,7 +910,7 @@ export default function MainDashboard({
                 type="submit"
                 disabled={!inputText.trim() || loadingReflection}
                 id="message-send-btn"
-                className="bg-ember-500 hover:bg-ember-600 text-paper-50 font-semibold p-3.5 rounded-2xl transition duration-150 disabled:opacity-40 shadow-lg cursor-pointer shrink-0"
+                className="bg-ember-500 hover:bg-ember-600 text-ink-950 font-semibold p-3.5 rounded-2xl transition duration-150 disabled:opacity-40 shadow-lg cursor-pointer shrink-0"
               >
                 <Send className="w-4 h-4" />
               </button>

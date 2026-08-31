@@ -4,8 +4,9 @@ import { JournalEntry, UserProfile } from '../types';
 import { postJson, getStoredByokKey, setStoredByokKey, GEMINI_KEY_SHAPE } from '../lib/api';
 import { cosineSimilarity } from '../lib/vector';
 import { getMoodColor } from '../lib/mood';
+import { applyTheme, getTheme, type Theme } from '../lib/theme';
 import { 
-  LogOut, Plus, Search, BookOpen, 
+  LogOut, Plus, Search, BookOpen, Sun, Moon, 
   Calendar, Hash, Smile, Sparkles, FilterX, BrainCircuit, ShieldAlert,
   KeyRound, Loader2, Type as TypeIcon
 } from 'lucide-react';
@@ -102,6 +103,14 @@ export default function Sidebar({
     }
   };
 
+  const [theme, setTheme] = useState<Theme>(getTheme);
+
+  const toggleTheme = () => {
+    const next: Theme = theme === 'dark' ? 'light' : 'dark';
+    setTheme(next);
+    applyTheme(next);
+  };
+
   const saveByokKey = () => {
     const trimmed = byokDraft.trim();
     if (trimmed && !GEMINI_KEY_SHAPE.test(trimmed)) return;
@@ -156,7 +165,7 @@ export default function Sidebar({
         <button
           onClick={onNewEntry}
           id="sidebar-new-entry-btn"
-          className="bg-ember-500 hover:bg-ember-600 text-paper-50 font-medium p-2 rounded-xl transition duration-150 shadow-sm shadow-ember-500/20 flex items-center justify-center cursor-pointer"
+          className="bg-ember-500 hover:bg-ember-600 text-ink-950 font-medium p-2 rounded-xl transition duration-150 shadow-sm shadow-ember-500/20 flex items-center justify-center cursor-pointer"
           title="New Journal Reflection"
         >
           <Plus className="w-4 h-4" />
@@ -298,7 +307,7 @@ export default function Sidebar({
                 onClick={() => onCategoryChange('')}
                 className={`px-2 py-0.5 rounded-full text-xs border transition cursor-pointer ${
                   !selectedCategory 
-                    ? 'bg-ember-500 border-ember-500 text-paper-50' 
+                    ? 'bg-ember-500 border-ember-500 text-ink-950' 
                     : 'bg-ink-850 border-ink-700 text-paper-400 hover:bg-ink-800'
                 }`}
               >
@@ -310,7 +319,7 @@ export default function Sidebar({
                   onClick={() => onCategoryChange(cat)}
                   className={`px-2 py-0.5 rounded-full text-xs border transition cursor-pointer ${
                     selectedCategory === cat 
-                      ? 'bg-ember-500 border-ember-500 text-paper-50' 
+                      ? 'bg-ember-500 border-ember-500 text-ink-950' 
                       : 'bg-ink-850 border-ink-700 text-paper-400 hover:bg-ink-800'
                   }`}
                 >
@@ -329,7 +338,7 @@ export default function Sidebar({
                 onClick={() => onMoodChange('')}
                 className={`px-2 py-0.5 rounded-full text-xs border transition cursor-pointer ${
                   !selectedMood 
-                    ? 'bg-ember-500 border-ember-500 text-paper-50' 
+                    ? 'bg-ember-500 border-ember-500 text-ink-950' 
                     : 'bg-ink-850 border-ink-700 text-paper-400 hover:bg-ink-800'
                 }`}
               >
@@ -341,7 +350,7 @@ export default function Sidebar({
                   onClick={() => onMoodChange(md)}
                   className={`px-2 py-0.5 rounded-full text-xs border transition cursor-pointer ${
                     selectedMood === md 
-                      ? 'bg-ember-500 border-ember-500 text-paper-50' 
+                      ? 'bg-ember-500 border-ember-500 text-ink-950' 
                       : 'bg-ink-850 border-ink-700 text-paper-400 hover:bg-ink-800'
                   }`}
                 >
@@ -464,7 +473,7 @@ export default function Sidebar({
               <button
                 type="button"
                 onClick={saveByokKey}
-                className="flex-1 bg-ember-500 hover:bg-ember-600 text-paper-50 text-[11px] font-bold py-1.5 rounded-lg transition cursor-pointer"
+                className="flex-1 bg-ember-500 hover:bg-ember-600 text-ink-950 text-[11px] font-bold py-1.5 rounded-lg transition cursor-pointer"
               >
                 Save
               </button>
@@ -493,7 +502,7 @@ export default function Sidebar({
               className="w-8 h-8 rounded-full object-cover border border-ink-700 shadow-sm"
             />
           ) : (
-            <div className="w-8 h-8 rounded-full bg-ember-500 text-paper-50 flex items-center justify-center font-bold text-xs">
+            <div className="w-8 h-8 rounded-full bg-ember-500 text-ink-950 flex items-center justify-center font-bold text-xs">
               {user.displayName ? user.displayName[0].toUpperCase() : 'U'}
             </div>
           )}
@@ -501,6 +510,16 @@ export default function Sidebar({
             <p className="text-xs font-medium text-paper-50 truncate">{user.displayName || 'Reflective Mind'}</p>
             <p className="text-[10px] text-paper-600 truncate">{user.email || 'Private Account'}</p>
           </div>
+
+          <button
+            onClick={toggleTheme}
+            id="theme-toggle-btn"
+            className="p-1 hover:bg-ink-850 text-paper-600 hover:text-ember-400 rounded-lg transition cursor-pointer press"
+            title={theme === 'dark' ? 'Switch to light' : 'Switch to dark'}
+            aria-label={theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'}
+          >
+            {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+          </button>
 
           <button
             onClick={onSignOut}

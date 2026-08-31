@@ -12,7 +12,11 @@ import {
   validateMessages,
   safeMessage,
   __resetRateLimit,
+  trialQuota,
+  trialRemainingFor,
+  __resetTrialQuota,
   RATE_LIMIT_MAX,
+  TRIAL_LIMIT,
   MAX_MESSAGES,
   MAX_TOTAL_CHARS,
 } from '../server';
@@ -122,6 +126,65 @@ console.log('===========================================================');
   __resetRateLimit();
   const { res, nextCalled } = run(rateLimitPerUser, {});
   assert(!nextCalled && res.statusValue === 401, 'Rate limiter rejects an unauthenticated request');
+}
+
+// --- trialQuota -------------------------------------------------------------
+{
+  __resetTrialQuota();
+  const req = { user: { uid: 'trial-user' } };
+
+  let allowed = 0;
+  for (let i = 0; i < TRIAL_LIMIT; i++) {
+    if (run(trialQuota, req).nextCalled) allowed++;
+  }
+  assert(allowed === TRIAL_LIMIT, `The first ${TRIAL_LIMIT} generations are allowed`);
+
+  const { res, nextCalled } = run(trialQuota, req);
+  assert(!nextCalled, `Generation ${TRIAL_LIMIT + 1} is blocked`);
+  assert(res.statusValue === 429, 'An exhausted trial gets 429');
+  assert(
+    res.jsonBody?.code === 'TRIAL_EXHAUSTED',
+    'An exhausted trial is distinguishable from a burst rate limit'
+  );
+  assert(
+    String(res.jsonBody?.error || '').includes('own Gemini API key'),
+    'The exhausted-trial error tells the user how to continue'
+  );
+}
+
+{
+  __resetTrialQuota();
+  const req = { user: { uid: 'counter-user' } };
+  assert(trialRemainingFor('counter-user') === TRIAL_LIMIT, 'A new user starts with the full allowance');
+
+  const { res } = run(trialQuota, req);
+  assert(
+    Number(res.headers['X-Trial-Remaining']) === TRIAL_LIMIT - 1,
+    'Each generation reports the remaining allowance on the response'
+  );
+  assert(trialRemainingFor('counter-user') === TRIAL_LIMIT - 1, 'The counter decrements by one per generation');
+}
+
+{
+  __resetTrialQuota();
+  const byokReq = { user: { uid: 'byok-trial-user' }, byokKey: 'AIza' + 'x'.repeat(35) };
+  let allowed = 0;
+  for (let i = 0; i < TRIAL_LIMIT + 5; i++) {
+    if (run(trialQuota, byokReq).nextCalled) allowed++;
+  }
+  assert(allowed === TRIAL_LIMIT + 5, 'A caller using their own key is not charged against the trial');
+}
+
+{
+  __resetTrialQuota();
+  run(trialQuota, { user: { uid: 'heavy-user' } });
+  assert(trialRemainingFor('other-user') === TRIAL_LIMIT, 'The trial is per-user, not global');
+}
+
+{
+  __resetTrialQuota();
+  const { res, nextCalled } = run(trialQuota, {});
+  assert(!nextCalled && res.statusValue === 401, 'Trial quota rejects an unauthenticated request');
 }
 
 // --- extractByokKey ---------------------------------------------------------

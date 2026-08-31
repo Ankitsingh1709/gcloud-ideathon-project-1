@@ -183,6 +183,53 @@ export function __resetRateLimit() {
   rateLimitHits.clear();
 }
 
+// --- Trial quota ------------------------------------------------------------
+// Sign-in is open to any Google account, and every signed-in caller spends OUR
+// Gemini key. So the shared key is a trial allowance, not a free service: after
+// TRIAL_LIMIT generations a caller must supply their own key to continue.
+//
+// The rate limiter shapes bursts; this bounds the total. They are different
+// jobs and both are needed — 20/5min with no ceiling is still unbounded cost.
+//
+// ponytail: in-memory like the rate limiter, so a cold start refills the
+// allowance. That fails open toward the user and never toward runaway cost,
+// because the rate limiter still caps throughput. Move both to a Firestore
+// counter together if the trial ever needs to survive a restart.
+export const TRIAL_LIMIT = 10;
+const trialUsed = new Map<string, number>();
+
+export function trialRemainingFor(uid: string): number {
+  return Math.max(0, TRIAL_LIMIT - (trialUsed.get(uid) || 0));
+}
+
+export function trialQuota(req: any, res: any, next: any) {
+  // Spending your own key draws down your own quota, not ours.
+  if (req.byokKey) return next();
+
+  const uid = req.user?.uid;
+  if (!uid) return res.status(401).json({ error: 'Unauthenticated.' });
+
+  const used = trialUsed.get(uid) || 0;
+  if (used >= TRIAL_LIMIT) {
+    return res.status(429).json({
+      error: `You have used all ${TRIAL_LIMIT} trial generations. Add your own Gemini API key in the sidebar to keep writing.`,
+      // The client keys on this to tell an exhausted trial apart from a burst
+      // rate limit — one is fixed by waiting, the other never is.
+      code: 'TRIAL_EXHAUSTED',
+      trialLimit: TRIAL_LIMIT,
+      trialRemaining: 0,
+    });
+  }
+
+  trialUsed.set(uid, used + 1);
+  res.setHeader('X-Trial-Remaining', String(TRIAL_LIMIT - used - 1));
+  next();
+}
+
+export function __resetTrialQuota() {
+  trialUsed.clear();
+}
+
 // --- Input caps -------------------------------------------------------------
 export const MAX_MESSAGES = 100;
 export const MAX_TOTAL_CHARS = 24000;
@@ -338,13 +385,28 @@ app.get('/api/health', (_req, res) => {
   res.json({ status: 'ok', version: APP_VERSION, uptimeSeconds: process.uptime() });
 });
 
+// How much of the shared-key trial is left. Read on sign-in so the allowance
+// survives a page reload, which a response header alone would not.
+app.get('/api/trial', authenticateFirebaseUser, extractByokKey, (req: any, res: any) => {
+  res.json({
+    limit: TRIAL_LIMIT,
+    remaining: req.byokKey ? null : trialRemainingFor(req.user.uid),
+    usingOwnKey: Boolean(req.byokKey),
+  });
+});
+
 // Every Gemini route is authenticated, BYOK-aware, and rate limited.
 const geminiGuards = [authenticateFirebaseUser, extractByokKey, rateLimitPerUser];
+
+// Endpoints the user experiences as "a generation" also draw down the trial.
+// /api/gemini/embed is deliberately excluded: it is an implementation detail
+// of cataloguing and search, not something the user asked to generate.
+const generationGuards = [...geminiGuards, trialQuota];
 
 // API Routes
 
 // Route 1: Converse / get reflection from Gemini
-app.post('/api/gemini/reflect', geminiGuards, async (req: any, res: any) => {
+app.post('/api/gemini/reflect', generationGuards, async (req: any, res: any) => {
   try {
     const body = (req.body && typeof req.body === 'object') ? req.body : {};
     const { messages } = body;
@@ -375,7 +437,7 @@ app.post('/api/gemini/reflect', geminiGuards, async (req: any, res: any) => {
 });
 
 // Route 2: Analyze conversation and generate metadata (Title, Summary, Category, Mood)
-app.post('/api/gemini/analyze', geminiGuards, async (req: any, res: any) => {
+app.post('/api/gemini/analyze', generationGuards, async (req: any, res: any) => {
   try {
     const body = (req.body && typeof req.body === 'object') ? req.body : {};
     const { text } = body;
@@ -469,7 +531,7 @@ app.get('/api/admin/system-stats', authenticateFirebaseUser, requireAdminRole, (
 // Route 4: Streaming reflection (Server-Sent Events).
 // Kept alongside /api/gemini/reflect rather than replacing it: the client
 // falls back to the non-streaming route, which walks the full model ladder.
-app.post('/api/gemini/reflect/stream', geminiGuards, async (req: any, res: any) => {
+app.post('/api/gemini/reflect/stream', generationGuards, async (req: any, res: any) => {
   const body = (req.body && typeof req.body === 'object') ? req.body : {};
   const { messages } = body;
 
@@ -601,7 +663,7 @@ app.post('/api/gemini/embed', geminiGuards, async (req: any, res: any) => {
 // Accepts entry METADATA only. The server re-projects whatever it is sent down
 // to five known fields, so journal bodies cannot reach the model through this
 // route even if a future client sends them by mistake.
-app.post('/api/gemini/digest', geminiGuards, async (req: any, res: any) => {
+app.post('/api/gemini/digest', generationGuards, async (req: any, res: any) => {
   try {
     const body = (req.body && typeof req.body === 'object') ? req.body : {};
     const { entries } = body;

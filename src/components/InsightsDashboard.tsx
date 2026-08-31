@@ -276,7 +276,7 @@ export default function InsightsDashboard({ entries }: InsightsDashboardProps) {
             onClick={generateDigest}
             disabled={digestLoading || digestCandidates.length === 0}
             id="generate-digest-btn"
-            className="shrink-0 inline-flex items-center justify-center space-x-2 bg-ember-500 hover:bg-ember-600 disabled:opacity-40 text-paper-50 font-bold text-xs px-4 py-2.5 rounded-xl transition cursor-pointer"
+            className="shrink-0 inline-flex items-center justify-center space-x-2 bg-ember-500 hover:bg-ember-600 disabled:opacity-40 text-ink-950 font-bold text-xs px-4 py-2.5 rounded-xl transition cursor-pointer"
           >
             {digestLoading
               ? <Loader2 className="w-3.5 h-3.5 animate-spin" />

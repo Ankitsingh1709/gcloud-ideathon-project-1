@@ -51,11 +51,58 @@
   --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
 }
 
+/*
+  Light theme. The palette is fully tokenized, so a theme is a token block —
+  no component changes at all. The ramps keep their meaning rather than their
+  values: ink-* stays "surfaces, ascending in lift" and paper-* stays "text,
+  descending in emphasis", so `bg-ink-900 text-paper-200` reads correctly in
+  both themes.
+
+  Every text tier below was measured against all three light surfaces rather
+  than eyeballed; the worst pair is 4.77:1, clearing WCAG AA. The first pass
+  bottomed out at 3.98:1 on paper-700 and ember-500, which is why both sit
+  darker here than a straight inversion would put them.
+*/
+:root[data-theme="light"] {
+  /* Surfaces — warm paper, the card lifting *lighter* than the page */
+  --color-ink-950: #f5f1e9;  /* page */
+  --color-ink-900: #fffdf8;  /* card */
+  --color-ink-850: #efe9df;  /* hover / inset */
+  --color-ink-800: #e2dacd;  /* border, subtle */
+  --color-ink-700: #cfc3b1;  /* border, strong */
+  --color-ink-600: #b3a48e;  /* border, strongest */
+
+  /* Text — warm near-black, descending */
+  --color-paper-50:  #14110d;  /* 18.5:1 on the card */
+  --color-paper-200: #241f18;  /* 16.1:1 */
+  --color-paper-400: #413a2f;  /* 11.0:1 */
+  --color-paper-500: #554b3e;  /*  8.4:1 */
+  --color-paper-600: #635747;  /*  6.9:1 */
+  --color-paper-700: #6f6354;  /*  5.8:1 — the floor, still clear of AA */
+
+  /* The ember accent, darkened to stay legible on paper rather than glow on it */
+  --color-ember-300: #6d3c1d;  /* text on the ember-950 tint */
+  --color-ember-400: #8a4a24;
+  --color-ember-500: #9a5329;
+  --color-ember-600: #7f4420;
+  --color-ember-900: #f7ddc4;  /* selection ground */
+  --color-ember-950: #fdf0e4;  /* badge ground */
+
+  /* Shadows on paper are cast by the page, not by the dark. */
+  --shadow-sink: 0 1px 2px rgb(90 74 54 / 0.10), 0 8px 24px -12px rgb(90 74 54 / 0.18);
+  --shadow-lift: 0 2px 4px rgb(90 74 54 / 0.12), 0 16px 40px -16px rgb(90 74 54 / 0.24);
+}
+
 @layer base {
   html {
+    color-scheme: dark;
     scroll-behavior: smooth;
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
+  }
+
+  :root[data-theme="light"] {
+    color-scheme: light;
   }
 
   body {
@@ -129,6 +176,13 @@
     pointer-events: none;
     opacity: 0.035;
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.82' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+
+  /* Noise is dark. On paper it reads as dirt long before it reads as texture,
+     so the light theme gets a third of it. Written flat rather than nested:
+     you cannot nest inside a ::after rule, and it is dropped without error. */
+  :root[data-theme="light"] .grain::after {
+    opacity: 0.012;
   }
 
   /* Press feedback: a physical click, not a colour change. */

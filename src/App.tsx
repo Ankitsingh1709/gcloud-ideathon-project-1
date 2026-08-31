@@ -8,7 +8,11 @@ import Sidebar from './components/Sidebar';
 import MainDashboard from './components/MainDashboard';
 import InsightsDashboard from './components/InsightsDashboard';
 import AdminDashboard from './components/AdminDashboard';
+import WelcomeNote from './components/WelcomeNote';
 import { AlertTriangle, BookOpen, RefreshCw } from 'lucide-react';
+
+const WELCOME_SEEN_KEY = 'reflect.welcomeSeen';
+const TRIAL_LIMIT = 10;
 
 export default function App() {
   const [user, setUser] = useState<UserProfile | null>(null);
@@ -17,6 +21,10 @@ export default function App() {
   const [loading, setLoading] = useState(true);
   const [globalError, setGlobalError] = useState<string | null>(null);
   const [currentView, setCurrentView] = useState<'workspace' | 'insights' | 'admin'>('workspace');
+
+  // Shown once per browser on a first sign-in. Reading it lazily keeps the
+  // modal from flashing for a returning writer while auth resolves.
+  const [showWelcome, setShowWelcome] = useState(false);
 
   // Filters State
   const [searchQuery, setSearchQuery] = useState('');
@@ -50,6 +58,12 @@ export default function App() {
           });
         }
         setGlobalError(null);
+
+        try {
+          if (!localStorage.getItem(WELCOME_SEEN_KEY)) setShowWelcome(true);
+        } catch {
+          /* private mode: skip the note rather than showing it every load */
+        }
       } else {
         setUser(null);
         setEntries([]);
@@ -199,8 +213,24 @@ export default function App() {
 
   const activeEntry = getActiveEntry();
 
+  const dismissWelcome = () => {
+    setShowWelcome(false);
+    try {
+      localStorage.setItem(WELCOME_SEEN_KEY, '1');
+    } catch {
+      /* it will simply be shown again next time */
+    }
+  };
+
   return (
     <div className="h-screen bg-ink-950 flex flex-col overflow-hidden" id="app-root-workspace">
+      {showWelcome && (
+        <WelcomeNote
+          displayName={user.displayName}
+          trialLimit={TRIAL_LIMIT}
+          onClose={dismissWelcome}
+        />
+      )}
       {/* Global Error Banner */}
       {globalError && (
         <div className="bg-rose-950/40 border-b border-rose-900/50 text-rose-300 text-xs px-6 py-2.5 flex items-center justify-between font-semibold">

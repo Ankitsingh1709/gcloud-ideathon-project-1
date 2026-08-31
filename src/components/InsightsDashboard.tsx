@@ -183,7 +183,9 @@ export default function InsightsDashboard({ entries }: InsightsDashboardProps) {
   }, [activeEntries]);
 
   // Color scheme constants matched to our luxury dark palette
-  const accentColors = ['#8b5cf6', '#d946ef', '#10b981', '#f59e0b', '#3b82f6'];
+  // Categories are not emotions, so they use the warm accent ramp. Saturated
+  // hue stays reserved for mood, which is the only thing colour encodes here.
+  const accentColors = ['#d4814c', '#e39b6b', '#b4663a', '#f0b892', '#8a5a34'];
 
   // --- Weekly digest --------------------------------------------------------
   // Generated on demand and held in component state. Only entry METADATA is

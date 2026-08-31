@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { JournalEntry, Message } from '../types';
 import { postJson, postStream } from '../lib/api';
 import { useSpeechRecognition } from '../lib/useSpeechRecognition';
+import { getMoodColor } from '../lib/mood';
 import { 
   Sparkles, Send, Save, CheckCircle, AlertTriangle, 
   RefreshCw, Smile, Hash, BookOpen, BrainCircuit, Feather,
@@ -433,18 +434,6 @@ export default function MainDashboard({
     }
   };
 
-  const getMoodBadgeColor = (mood: string) => {
-    switch (mood.toLowerCase()) {
-      case 'calm': return 'bg-teal-950/40 text-teal-300 border-teal-900/40';
-      case 'grateful': return 'bg-amber-950/40 text-amber-300 border-amber-900/40';
-      case 'anxious': return 'bg-rose-950/40 text-rose-300 border-rose-900/40';
-      case 'excited': return 'bg-sky-950/40 text-sky-300 border-sky-900/40';
-      case 'reflective': return 'bg-ember-950 text-ember-500 border-ember-900/30';
-      case 'melancholy': return 'bg-violet-950/40 text-violet-300 border-violet-900/40';
-      case 'motivated': return 'bg-emerald-950/40 text-emerald-300 border-emerald-900/40';
-      default: return 'bg-ink-850 text-paper-400 border-ink-700';
-    }
-  };
 
   return (
     <div className="flex-1 bg-ink-950 flex flex-col h-full overflow-hidden" id="workspace-container">
@@ -600,7 +589,7 @@ export default function MainDashboard({
               <div className="space-y-1 bg-ink-850 p-3 rounded-xl border border-ink-700">
                 <span className="text-[10px] font-bold text-paper-600 uppercase tracking-wider block">Detected Mood</span>
                 {entry.mood ? (
-                  <span className={`inline-flex items-center text-xs font-bold border px-2 py-0.5 rounded-full mt-1 ${getMoodBadgeColor(entry.mood)}`}>
+                  <span className={`inline-flex items-center text-xs font-bold border px-2 py-0.5 rounded-full mt-1 ${getMoodColor(entry.mood)}`}>
                     <Smile className="w-3.5 h-3.5 mr-0.5 opacity-85" />
                     {entry.mood}
                   </span>
@@ -678,7 +667,7 @@ export default function MainDashboard({
                               {match.label}
                             </span>
                             {match.entry.mood && (
-                              <span className={`inline-flex items-center text-[10px] font-bold border px-2 py-0.5 rounded-full ${getMoodBadgeColor(match.entry.mood)}`}>
+                              <span className={`inline-flex items-center text-[10px] font-bold border px-2 py-0.5 rounded-full ${getMoodColor(match.entry.mood)}`}>
                                 {match.entry.mood}
                               </span>
                             )}

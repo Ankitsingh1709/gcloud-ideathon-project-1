@@ -176,7 +176,7 @@ export default function AdminDashboard() {
       {/* Header */}
       <header className="px-8 py-6 border-b border-ink-700 bg-ink-900/80 backdrop-blur-md flex items-center justify-between sticky top-0 z-10">
         <div className="flex items-center space-x-3">
-          <div className="bg-purple-950/40 border border-purple-500/30 p-2.5 rounded-2xl text-purple-400 shrink-0">
+          <div className="bg-ember-950/40 border border-ember-500/30 p-2.5 rounded-2xl text-ember-400 shrink-0">
             <ShieldAlert className="w-6 h-6" />
           </div>
           <div>
@@ -190,7 +190,7 @@ export default function AdminDashboard() {
           disabled={refreshing}
           className="flex items-center space-x-2 bg-ink-850 hover:bg-ink-800 border border-ink-700 text-paper-400 hover:text-paper-50 px-4 py-2 rounded-xl text-xs font-semibold tracking-wider uppercase transition cursor-pointer disabled:opacity-50"
         >
-          <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin text-purple-400' : ''}`} />
+          <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin text-ember-400' : ''}`} />
           <span>Sync Status</span>
         </button>
       </header>
@@ -200,7 +200,7 @@ export default function AdminDashboard() {
         {/* Bootstrap Instruction Box */}
         <section className="bg-ink-900 border border-ember-900/40 rounded-2xl p-6 relative overflow-hidden">
           <div className="flex items-start space-x-4">
-            <div className="bg-ember-950 p-3 rounded-xl border border-purple-900/40 text-ember-500 shrink-0 mt-1">
+            <div className="bg-ember-950 p-3 rounded-xl border border-ember-900/40 text-ember-500 shrink-0 mt-1">
               <Terminal className="w-5 h-5" />
             </div>
             <div className="space-y-2 flex-1 min-w-0">
@@ -227,8 +227,8 @@ export default function AdminDashboard() {
               </div>
 
               <div className="mt-3 bg-ember-950/50 p-3 rounded-xl border border-ember-900/20">
-                <span className="text-[10px] uppercase font-bold tracking-wider text-purple-400 block mb-1">Terminal bootstrap command:</span>
-                <code className="font-mono text-xs text-purple-200 select-all block break-all">
+                <span className="text-[10px] uppercase font-bold tracking-wider text-ember-400 block mb-1">Terminal bootstrap command:</span>
+                <code className="font-mono text-xs text-ember-300 select-all block break-all">
                   npx tsx scripts/bootstrap-admin.ts "{currentUserUid}"
                 </code>
               </div>
@@ -272,7 +272,7 @@ export default function AdminDashboard() {
 
               {/* Stat 2 */}
               <div className="bg-ink-900 border border-ink-800 p-6 rounded-2xl flex items-center space-x-4">
-                <div className="bg-purple-950/30 border border-purple-900/30 p-3 rounded-xl text-purple-400 shrink-0">
+                <div className="bg-ember-950/30 border border-ember-900/30 p-3 rounded-xl text-ember-400 shrink-0">
                   <Activity className="w-6 h-6" />
                 </div>
                 <div>
@@ -342,7 +342,7 @@ export default function AdminDashboard() {
             <div className="bg-ink-900 border border-ink-800 p-6 rounded-2xl flex flex-col justify-between space-y-4">
               <div>
                 <div className="flex items-center space-x-2 text-paper-400 font-bold text-sm">
-                  <ShieldAlert className="w-4 h-4 text-purple-400" />
+                  <ShieldAlert className="w-4 h-4 text-ember-400" />
                   <span>Verify Firestore Rules Isolation</span>
                 </div>
                 <p className="text-xs text-paper-600 mt-1.5 leading-relaxed">

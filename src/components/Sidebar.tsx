@@ -194,8 +194,8 @@ export default function Sidebar({
             onClick={() => onViewChange && onViewChange('admin')}
             className={`flex-1 flex items-center justify-center space-x-1.5 py-2 text-center font-bold text-xs uppercase tracking-wider rounded-xl transition cursor-pointer ${
               currentView === 'admin'
-                ? 'bg-purple-950/40 text-purple-200 border border-purple-900/30'
-                : 'text-purple-400/70 hover:text-purple-300'
+                ? 'bg-ember-950/40 text-ember-300 border border-ember-900/30'
+                : 'text-ember-400/70 hover:text-ember-300'
             }`}
             id="toggle-admin-view-btn"
           >
@@ -275,7 +275,7 @@ export default function Sidebar({
       </div>
 
       {/* Filter Stats/Cleanups */}
-      {hasActiveFilters && (
+      {hasActiveFilters && !(semanticMode && semanticResults) && (
         <div className="px-4 pb-2 flex items-center justify-between text-xs">
           <span className="text-paper-600 font-medium">{filteredEntries.length} entries found</span>
           <button 
@@ -367,10 +367,15 @@ export default function Sidebar({
                 Closest in meaning
               </p>
               {semanticResults.map(({ entry, score }) => (
-                <div key={entry.id} className="relative">
-                  <span className="absolute right-2 top-2 z-10 text-[9px] font-bold text-ember-500 bg-ember-950 border border-ember-900/30 px-1.5 py-0.5 rounded-full pointer-events-none">
-                    {(score * 100).toFixed(0)}%
-                  </span>
+                <div key={entry.id} className="space-y-1 pt-1">
+                  {/* In normal flow rather than an absolute overlay: a badge
+                      positioned over the card was being painted behind it. */}
+                  <div className="flex items-center gap-2 px-2">
+                    <span className="text-[10px] font-bold text-ember-400 tabular shrink-0">
+                      {(score * 100).toFixed(0)}% match
+                    </span>
+                    <span className="h-px flex-1 bg-ink-800" />
+                  </div>
                   <SidebarEntryItem
                     entry={entry}
                     isSelected={entry.id === selectedEntryId}

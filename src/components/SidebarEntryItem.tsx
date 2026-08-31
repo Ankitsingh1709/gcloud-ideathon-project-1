@@ -274,9 +274,9 @@ export default function SidebarEntryItem({
 
               <button
                 onClick={handleCopyLink}
-                className="flex flex-col items-center justify-center p-4 bg-ink-850 border border-ink-700 hover:border-purple-500/50 rounded-2xl transition text-center space-y-2 group cursor-pointer"
+                className="flex flex-col items-center justify-center p-4 bg-ink-850 border border-ink-700 hover:border-ember-500/50 rounded-2xl transition text-center space-y-2 group cursor-pointer"
               >
-                <div className={`p-3 rounded-xl transition ${copied ? 'bg-emerald-500/20 text-emerald-400' : 'bg-purple-500/10 text-purple-400'}`}>
+                <div className={`p-3 rounded-xl transition ${copied ? 'bg-emerald-500/20 text-emerald-400' : 'bg-ember-500/10 text-ember-400'}`}>
                   {copied ? <Check className="w-5 h-5" /> : <Copy className="w-5 h-5" />}
                 </div>
                 <span className="text-xs font-semibold text-paper-50">

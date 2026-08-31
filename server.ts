@@ -9,7 +9,8 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 const app = express();
-const PORT = 3000;
+// Cloud Run injects PORT (8080 by default); fall back to 3000 for local dev.
+const PORT = Number(process.env.PORT) || 3000;
 const FIREBASE_PROJECT_ID = "lab1-rag-project";
 
 // Express middleware for payload ingestion

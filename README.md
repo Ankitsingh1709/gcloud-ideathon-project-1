@@ -4,413 +4,331 @@
 **Source:** https://github.com/Ankitsingh1709/gcloud-ideathon-project-1
 **Stack:** React 19 · Express · Firebase Auth · Cloud Firestore · Gemini · Cloud Run
 
-Reflect.ai is a journaling application built on the Cloud Run AI challenge baseline
-and taken well past it. You speak or type a reflection, Gemini answers as it streams,
-and every catalogued entry is embedded so you can later ask *"when have I felt like
-this before?"* and get your own past back — ranked by meaning, not keywords.
+You speak or type a reflection, Gemini answers as it streams, and every catalogued
+entry is embedded so you can later ask *"when have I felt like this before?"* and get
+your own past back — ranked by meaning, not keywords.
 
-The design constraint throughout was that a journal is the most private thing a
-person will put in a database. Several decisions below cost features on purpose.
+A journal is the most private thing a person will put in a database. Several
+decisions below deliberately cost features to keep that true.
 
 ---
 
-## Table of contents
+## Contents
 
-- [Custom features — what changed, and how](#custom-features--what-changed-and-how)
-- [Third-party integrations — setup steps](#third-party-integrations--setup-steps)
+Grouped by the four judging criteria. Every feature links to what it does and how to
+use it in the live app.
+
+**[Authenticity](#authenticity) — what we built beyond the starter lab**
+- [Semantic memory search](#semantic-memory-search) — find entries by feeling, not by keyword
+- [Streaming reflections](#streaming-reflections) — the reply appears as it is written
+- [Voice journaling](#voice-journaling) — speak an entry, no audio ever uploaded
+- [Week in review](#week-in-review) — a letter about your patterns, from metadata only
+- [Location-tagged entries](#location-tagged-entries) — one tap, a map, or manual
+- [Insights dashboard](#insights-dashboard) — mood trend, streak, focus distribution
+- [Bring your own key](#bring-your-own-key) — use your own Gemini key
+- [Admin console](#admin-console) — roles that stop short of your journal
+- [The design](#the-design) — colour reserved for mood
+
+**[Usability](#usability) — sign-in and interactions that do not fail**
+- [One-click Google sign-in](#one-click-google-sign-in)
+- [Your writing is saved before the AI is called](#your-writing-is-saved-before-the-ai-is-called)
+- [Every failure has a way out](#every-failure-has-a-way-out)
+- [It works when the extras do not](#it-works-when-the-extras-do-not)
+- [Accessibility](#accessibility)
+
+**[Stability](#stability) — error handling and uptime**
+- [A four-model fallback ladder](#a-four-model-fallback-ladder)
+- [Streaming that never restarts mid-sentence](#streaming-that-never-restarts-mid-sentence)
+- [A render crash is recoverable](#a-render-crash-is-recoverable)
+- [Failures are loud, not blank](#failures-are-loud-not-blank)
+- [Automated checks](#automated-checks)
+
+**[Security](#security) — database paths, API keys, access control**
+- [Admins cannot read your journal](#admins-cannot-read-your-journal)
+- [Isolation is enforced by rules, not by the client](#isolation-is-enforced-by-rules-not-by-the-client)
+- [Keys never reach the browser](#keys-never-reach-the-browser)
+- [The API is bounded](#the-api-is-bounded)
+- [Browser hardening](#browser-hardening)
+
+**Reference**
 - [Google Cloud services used](#google-cloud-services-used)
-- [Architecture](#architecture)
-- [Security model](#security-model)
-- [Running locally](#running-locally)
-- [Tests](#tests)
-- [Deploying to Cloud Run](#deploying-to-cloud-run)
-- [Verifying a deployment](#verifying-a-deployment)
+- [Run it yourself](#run-it-yourself)
+- [Deploy it yourself](#deploy-it-yourself)
 
 ---
 
-## Custom features — what changed, and how
+# Authenticity
 
-Everything in this section is beyond the starter lab. Each entry names the files and
-endpoints that were added or changed, so the diff is reviewable rather than described.
+Nine features that are not in the starter lab. Each one names what it does, why it is
+not the obvious version, and how to reach it in the running app.
 
-### 1. Semantic memory search
+## Semantic memory search
 
-Search your journal by *feeling*, not by keyword. Query "when did I feel stuck?" and
-entries that never contain the word "stuck" come back ranked first.
+Search your journal by *feeling*. Ask for "when did I feel stuck?" and entries that
+never contain the word "stuck" come back first, ranked by meaning.
 
-**How it works.** Every catalogued entry is embedded with `gemini-embedding-001` at
-768 dimensions and L2-normalized once on write. At search time the query is embedded
-through the same endpoint and ranked by cosine similarity against vectors already
-sitting in React state — no vector database, and no additional Firestore reads.
+Every catalogued entry is embedded with Gemini's embedding model and stored alongside
+it. Your search phrase is embedded the same way and compared against those vectors in
+the browser. There is no vector database and no extra database read — the comparison
+runs against entries already on screen.
 
-**Changes**
+Measured on live entries: a semantically related memory scores **0.88** against an
+unrelated one at **0.67**, on a query whose words appear in neither.
 
-| File | Change |
+**How to use it**
+1. Write an entry and press **Synthesize & Catalog** — this is what makes it searchable.
+2. Repeat for two or three entries.
+3. In the sidebar, switch the search toggle from **Text** to **Meaning**.
+4. Search an emotion you never actually typed — *lost*, *hopeful*, *stuck*.
+5. The five closest entries come back in order of similarity.
+
+## Streaming reflections
+
+Gemini's reply appears word by word instead of arriving as a block after a pause, so
+the app feels like it is thinking with you rather than making you wait.
+
+**How to use it:** write anything in the composer and press send. The reply streams in.
+
+## Voice journaling
+
+Dictate an entry instead of typing it. Transcription happens **inside your browser** —
+no audio file is ever recorded, uploaded, or sent to a server. Only the resulting text
+leaves your device.
+
+**How to use it:** press the microphone in the composer and speak. Your words appear
+as you talk; press it again to stop.
+
+> Not available in Firefox, which has no speech API. The button is hidden there
+> rather than shown broken.
+
+## Week in review
+
+A short letter from Gemini about the patterns in your last seven days — what you kept
+returning to, how your mood moved.
+
+It reads only the **outline** of your entries: date, title, one-line summary, mood,
+category. Your actual journal prose is never sent to write the letter. The time period
+is passed along and named in the prompt, so the letter cannot claim to describe "this
+week" while quietly reading your whole archive.
+
+**How to use it**
+1. Open the **Insights** tab in the sidebar.
+2. Choose **This week** or **All time**.
+3. Press **Write my letter**.
+
+## Location-tagged entries
+
+Attach a place to a reflection. Three ways, each working independently of the others:
+
+- **Use my current location** — one tap, with an accuracy readout in metres.
+- **The map** — pick a point; the map re-centres on it.
+- **Manual coordinates** — always available.
+
+**How to use it:** open an entry, press **Use my current location**, and allow the
+browser prompt. Coordinates and accuracy fill in. Or pick a point on the map, or type
+coordinates directly.
+
+## Insights dashboard
+
+Your mood as a weekly trend line, your consecutive-day writing streak, and how your
+entries distribute across categories. All of it derived from entries already loaded —
+it makes no extra database queries and no extra AI calls, so opening it costs nothing.
+
+**How to use it:** press **Insights** in the sidebar.
+
+## Bring your own key
+
+Use your own Gemini API key instead of ours. It is stored in your browser only — never
+written to the database, never logged, never kept on the server. Requests made with
+your own key skip the rate limit, because they are not spending our quota.
+
+**How to use it:** open the key field in the sidebar, paste a Gemini key, and save.
+Clear the field to go back to the shared key.
+
+## Admin console
+
+Role-based access backed by verified custom claims, showing service uptime and
+rate-limit counters. Its scope deliberately stops short of your journal — see
+[Admins cannot read your journal](#admins-cannot-read-your-journal).
+
+**How to use it:** an account needs the admin role granted server-side
+(`npx tsx scripts/bootstrap-admin.ts <UID>`). The console then appears in the sidebar.
+A user cannot grant themselves the role.
+
+## The design
+
+A warm "ink on paper" palette in which **colour is reserved for mood** — the interface
+is monochrome, so the only saturated thing on screen is how you felt. Journal prose is
+set in a serif because it is being read as writing, not as UI. Nothing about it looks
+like a default AI dashboard, which was the point.
+
+---
+
+# Usability
+
+## One-click Google sign-in
+
+Single sign-on through Google. One button, no account creation, no password, no email
+verification step. Sign out and back in as a second Google account and the sidebar is
+empty — your entries are yours.
+
+## Your writing is saved before the AI is called
+
+The order matters. Your entry is written to the database **first**, and only then is
+Gemini asked to respond. If generation fails, times out, or the network drops, the
+thing you wrote is already safe. A journal that can lose your words to a failed API
+call is not a journal.
+
+## Every failure has a way out
+
+Generation failures show a **Retry** control rather than a dead end. Loading, empty,
+and error states exist on every panel — you are never looking at a blank rectangle
+wondering whether it is broken or just slow. Errors say what happened in plain
+language, and a rate-limited request tells you how long to wait.
+
+## It works when the extras do not
+
+Each optional integration degrades on its own rather than taking the app with it:
+
+| If this fails | You still get |
 |---|---|
-| `server.ts` | Added `POST /api/gemini/embed`. Calls `gemini-embedding-001` with `outputDimensionality: 768`, normalizes, returns the vector. |
-| `src/lib/vector.ts` | **New.** `l2Normalize` and `cosineSimilarity`, dependency-free so the server, the UI, and the test suite all import the same maths. |
-| `src/components/MainDashboard.tsx` | *Synthesize & Catalog* now issues `/api/gemini/analyze` and `/api/gemini/embed` in one `Promise.all`, so an entry becomes searchable the moment it is catalogued. A failed embedding is caught and the entry still saves. |
-| `src/components/Sidebar.tsx` | Added the **Text / Meaning** search toggle and the ranked top-5 result list, with an empty state that tells you to catalogue an entry first. |
-| `src/App.tsx` | The `onSnapshot` mapper now reads the `embedding` field back off the document — omitting it left search with nothing to rank. |
-| `firestore.rules` | The embedding vector is bounded at 768 floats. |
-| `scripts/test-semantic-search.ts` | **New.** 12 assertions: cosine edge cases (orthogonal, opposite, zero, mismatched dimensions) plus a live call proving a related memory outranks an unrelated one. |
+| The map will not load | One-tap live location and manual coordinate entry |
+| The browser has no speech API | The microphone button is hidden; typing is unaffected |
+| An embedding fails while cataloguing | The entry still saves; only search indexing is skipped |
+| The streaming route fails | The reply arrives through the non-streaming route |
 
-**Why `l2Normalize` exists.** `gemini-embedding-001` returns an *unnormalized* vector
-whenever `outputDimensionality` is anything other than the native 3072 — measured L2
-norm of ~0.59 at 768 dims. Normalizing once on write means cosine similarity later
-reduces to a dot product.
+## Accessibility
 
-**Try it:** catalogue two or three entries → switch the sidebar search to **Meaning**
-→ search for an emotion you never actually typed.
+Keyboard focus rings throughout, ARIA labels on every icon-only control, and
+`prefers-reduced-motion` respected — motion is dropped for anyone who asked for less,
+while fades remain. Every text tier was checked numerically against WCAG AA contrast
+rather than approved by eye.
 
 ---
 
-### 2. Streaming reflections over SSE
+# Stability
 
-Gemini's reply appears token by token instead of arriving as a block after a wait.
+## A four-model fallback ladder
 
-**Changes**
+Every Gemini call walks a list of four models with a 15-second ceiling each. If one is
+overloaded — and during development two of the four were returning 503 from upstream —
+the next is tried automatically. A capacity problem at the provider is invisible to
+the person writing in their journal.
 
-| File | Change |
-|---|---|
-| `server.ts` | Added `POST /api/gemini/reflect/stream` using `generateContentStream`, writing `text/event-stream` chunks. |
-| `src/lib/api.ts` | Reads the stream off `fetch`'s `ReadableStream` and parses SSE frames by hand. |
+## Streaming that never restarts mid-sentence
 
-**Why it is hand-parsed.** `EventSource` cannot send an `Authorization` header, and
-every `/api/*` call here carries a Firebase ID token. So the stream is read from
-`fetch` instead, and the SSE framing is parsed manually.
+Each model gets 12 seconds to produce its *first* token. Miss that and the next model
+takes over. But once a single word has reached the screen, the stream is committed —
+it will never silently restart and rewrite itself halfway through a sentence. Falling
+back is only allowed while nothing is visible.
 
-**Fallback behaviour.** Each model in the ladder gets a 12s *time-to-first-token*
-deadline. If nothing arrives, the next model is tried. Once a single token has
-reached the screen the stream is committed — it will never silently restart
-mid-sentence. If the whole stream route fails before any output, the client falls
-back to the non-streaming `POST /api/gemini/reflect`.
+## A render crash is recoverable
 
----
+An error boundary wraps the app, so a component failure shows a recovery screen
+instead of the white page that a React crash would otherwise produce.
 
-### 3. Voice journaling
+## Failures are loud, not blank
 
-**Changes:** `src/lib/useSpeechRecognition.ts` (**new**), wired into
-`src/components/MainDashboard.tsx`.
+The page shell is served uncacheable while fingerprinted assets are cached
+permanently. This fixed a real bug where a stale cached shell asked for asset files
+that no longer existed and rendered nothing at all. A missing asset now returns a
+clear 404 rather than silently returning the HTML page in its place.
 
-Built on the **native Web Speech API** — no library, and no audio ever leaves the
-device. The browser does the transcription locally and only the resulting text is
-sent anywhere. `isSpeechRecognitionSupported` is exported and the mic control is
-hidden entirely where the API is absent (Firefox), rather than rendering a button
-that fails.
+The health probe lives at `/api/health`, not `/healthz` — Cloud Run reserves that
+path, and a probe pointed at it never reaches the app.
 
-**Setup:** none. No key, no API to enable. It needs `microphone=(self)` in the
-`Permissions-Policy` header, which `server.ts` already sets.
-
----
-
-### 4. Week in review (metadata-only digest)
-
-A short Gemini-written letter about your patterns over the last seven days.
-
-**Changes:** `POST /api/gemini/digest` in `server.ts`;
-`src/components/InsightsDashboard.tsx` for the panel and the **week / all-time**
-toggle.
-
-**The privacy decision.** The digest endpoint receives only entry *metadata* — date,
-title, one-line summary, mood, category — capped at 30 entries. Full journal prose is
-never sent to the digest model. The selected period is passed to the server and named
-in the prompt, so the letter cannot claim to describe "this week" while actually
-holding your whole archive.
-
----
-
-### 5. Location-tagged entries (Google Maps + Geolocation)
-
-**Changes:** `src/components/MapPicker.tsx` (**new**), coordinate validation in
-`firestore.rules`, an optional `location: { lat, lng, placeName? }` on the entry
-schema in `src/types.ts`.
-
-Three ways to set a location, degrading in that order:
-
-1. **Use my current location** — native `navigator.geolocation.getCurrentPosition`, with an accuracy readout in metres. Works even when the map itself cannot load.
-2. **The map picker** — `@vis.gl/react-google-maps`, pans and re-centres on the selected point.
-3. **Manual coordinate entry** — always available.
-
-**Failure handling.** Maps Platform refuses to serve tiles to a project without
-active billing, rendering a grey `BillingNotEnabledMapError` overlay. The component
-traps the SDK's `gm_authFailure` callback and falls back to manual entry rather than
-letting Google's dialog break the layout.
-
-**Validation is in the rules, not just the UI** — latitude −90..90, longitude
-−180..180 — so a hand-crafted write is rejected at the database, not at the form.
-
----
-
-### 6. Insights dashboard
-
-**Changes:** `src/components/InsightsDashboard.tsx` (**new**), `src/lib/mood.ts`
-(**new** — the mood→index mapping, shared rather than duplicated across components),
-`recharts` added.
-
-Weekly mood-index trend, consecutive-day streak, and category distribution. It issues
-**no new Firestore queries and no new Gemini calls** — everything is derived from the
-entries already in React state.
-
----
-
-### 7. Bring-your-own-key
-
-**Changes:** `src/lib/api.ts` (`localStorage` accessors + shape regex), key extraction
-and validation in `server.ts`.
-
-Optionally use your own Gemini key. It lives in `localStorage` only — never written to
-Firestore, never logged, never cached server-side (a fresh client is constructed per
-request and discarded). Callers supplying their own key bypass the rate limit, because
-they are not spending the project's quota.
-
----
-
-### 8. Admin RBAC console
-
-**Changes:** `src/components/AdminDashboard.tsx` (**new**),
-`GET /api/admin/system-stats` behind `requireAdminRole` in `server.ts`,
-`scripts/bootstrap-admin.ts` (**new**), `scripts/test-admin-rbac.ts` (**new**, 31
-assertions).
-
-Custom-claim roles verified server-side against the decoded token. Scope is
-deliberately limited to operational metadata — see [Security model](#security-model)
-§2 for why administrators cannot read journal entries.
-
-**Setup:** `npx tsx scripts/bootstrap-admin.ts <UID>` — sets the `role` custom claim
-through the Admin SDK. A client cannot grant itself the claim.
-
----
-
-### 9. Original design system
-
-**Changes:** `src/index.css`, a full palette migration across every component.
-
-A warm "ink on paper" palette where **colour is reserved for mood** — the interface
-itself is monochrome, so the only saturated thing on screen is how you felt. Body
-copy is Instrument Sans; journal prose is set in Newsreader, a serif, because it is
-being read as writing rather than as UI. Every text tier was checked numerically for
-WCAG AA contrast rather than by eye, and `prefers-reduced-motion` drops movement
-while keeping fades.
-
----
-
-## Third-party integrations — setup steps
-
-| Integration | Used for | Key required | Where configured |
-|---|---|---|---|
-| Gemini API | Reflections, analysis, digest | `GEMINI_API_KEY` (server) | Secret Manager → env var |
-| Gemini Embeddings | Semantic search | same key | same |
-| Firebase Auth | Google SSO | public web config | `src/lib/firebase.ts` |
-| Cloud Firestore | Entry storage | public web config | `src/lib/firebase.ts` + `firestore.rules` |
-| Google Maps JS API | Location picker | `VITE_GOOGLE_MAPS_API_KEY` (browser) | **build-time** env var |
-| Web Speech API | Voice journaling | none | native browser API |
-| Geolocation API | One-tap location | none | native browser API |
-
-### Gemini (server-side)
+## Automated checks
 
 ```bash
-gcloud services enable generativelanguage.googleapis.com
-gcloud secrets create GEMINI_API_KEY --replication-policy="automatic"
-printf '%s' "YOUR_GEMINI_API_KEY" | gcloud secrets versions add GEMINI_API_KEY --data-file=-
+npm run lint          # type-checks the whole project
+npm run test:rbac     # 31 assertions: access control, rate limits, input caps, key redaction
+npm run test:search   # 12 assertions: similarity maths + a live ranking check
 ```
 
-Restrict the key to `generativelanguage.googleapis.com` under
-**Console → APIs & Services → Credentials → API restrictions**.
-
-The model ladder is defined in `server.ts` as `FALLBACK_MODELS` — `gemini-3.6-flash`,
-`gemini-3.1-flash-lite`, `gemini-flash-latest`, `gemini-3.7-flash` — with a 15s
-timeout per model. Reorder that array to change preference.
-
-### Firebase Auth and Firestore
-
-1. Enable the **Google** sign-in provider in Firebase Console → Authentication.
-2. After deploying, add your Cloud Run URL under Authentication → Settings →
-   **Authorized domains**, or sign-in works locally and fails in production.
-3. Deploy the rules: `firebase deploy --only firestore:rules`.
-
-This project uses a **named** Firestore database, not `(default)`. The id is set in
-both `firebase.json` and `src/lib/firebase.ts` — they must match, or the client
-writes to a database the rules were never deployed to.
-
-### Google Maps JavaScript API
-
-```bash
-gcloud services enable maps-backend.googleapis.com
-```
-
-Billing must be active — Maps Platform will not serve tiles otherwise.
-
-**`VITE_GOOGLE_MAPS_API_KEY` must be a *build* variable, not a runtime one.** Vite
-inlines `VITE_`-prefixed values into the bundle during `npm run build`. Since
-`.gcloudignore` excludes `.env` from the build context, passing it as
-`--set-env-vars` produces a deployed bundle with no Maps key at all. Use
-`--set-build-env-vars`.
-
-**Restrict the key.** A Maps browser key is necessarily visible in the bundle, so the
-referrer allowlist — not secrecy — is the control. Console → Credentials → the Maps
-key → **Application restrictions → Websites**:
-
-```
-https://your-service.run.app/*
-http://localhost:3000/*
-```
-
-Also set **API restrictions → Maps JavaScript API** so a lifted key cannot be spent
-on anything else.
-
-### Environment variables
-
-| Variable | Scope | Required | Purpose |
-|---|---|---|---|
-| `GEMINI_API_KEY` | server, runtime | yes | Gemini + embeddings. From Secret Manager in production. |
-| `VITE_GOOGLE_MAPS_API_KEY` | client, **build-time** | no | Map picker. Without it, manual + live location still work. |
-| `NODE_ENV` | server | no | `production` enables the CSP. |
-| `PORT` | server | no | Injected by Cloud Run. Defaults to 3000. |
-| `FIREBASE_PROJECT_ID` | server | no | Token audience/issuer pinning. |
-| `DISABLE_HMR` | dev | no | Stops file watching during agent edits. |
+The access-control suite imports the **real** server middleware rather than a copy of
+it, so it fails when the server changes. The search suite makes a live embedding call
+and asserts that a related memory genuinely outranks an unrelated one — it catches a
+ranking regression, not just a maths error.
 
 ---
 
-## Google Cloud services used
+# Security
 
-Confirmed against the submission form:
+## Admins cannot read your journal
 
-- **User authentication via Firebase** — Google SSO. ID tokens are verified server-side against Google's JWKS endpoint (`jsonwebtoken` + `jwks-rsa`) with issuer and audience pinned.
-- **Multi-turn interaction with the Gemini API** — full conversation history is replayed on every turn, streaming and non-streaming.
-- **User-isolated Firestore document storage** — `users/{uid}/entries/{entryId}`, enforced by rules, not by client convention.
-- **Secure API key retrieval via Google Cloud Secret Manager** — the Gemini key is mounted as an env var from Secret Manager at deploy time; it is never in the image, the repo, or the client.
-- **Others:**
-  - **Gemini Embeddings** (`gemini-embedding-001`) for semantic memory search.
-  - **Google Maps JavaScript API** for location tagging.
-  - **Cloud Run** for hosting, with `/api/health` as a probe target.
+The obvious implementation gives an administrator read access to every user's entries.
+On an app whose entire premise is private reflection, that is a diary backdoor wearing
+an administrator's badge.
 
----
+So administrator capability stops at operational metadata: the profile document
+(name, email, id — read-only), and service counters like uptime and rate-limit usage.
 
-## Architecture
+**There is no path, in the client or on the server, for an administrator to read the
+contents of anyone's entries.** This costs us an admin feature. That is the point.
 
-```
-Browser (React 19, Vite)
-  │  Firebase Auth (Google SSO) ──────► Firebase Identity Platform
-  │  Firestore Web SDK ───────────────► Cloud Firestore   [rules enforce isolation]
-  │
-  └─ fetch /api/*  (Bearer ID token, optional x-gemini-key)
-         │
-         ▼
-   Express on Cloud Run
-     ├─ verify ID token against Google JWKS  (issuer + audience pinned)
-     ├─ extract optional BYOK key            (shape-validated, never stored)
-     ├─ per-user rate limit                  (20 req / 5 min)
-     ├─ input caps                           (64 KB body, 100 msgs, 24k chars)
-     └─ Gemini  ─ reflect · reflect/stream · analyze · embed · digest
-                  GEMINI_API_KEY injected from Secret Manager
-```
+## Isolation is enforced by rules, not by the client
 
-### API surface
+Entries live under a per-user path, and access is decided by database security rules —
+not by the app remembering to filter. Even a hand-crafted request straight to the
+database is refused unless it belongs to the signed-in owner.
 
-| Endpoint | Auth | Purpose |
-|---|---|---|
-| `GET /api/health` | none | Liveness probe. Returns version + uptime. |
-| `POST /api/gemini/reflect` | ID token | Multi-turn reply, non-streaming. |
-| `POST /api/gemini/reflect/stream` | ID token | Same, as SSE. |
-| `POST /api/gemini/analyze` | ID token | Title, summary, mood, category. |
-| `POST /api/gemini/embed` | ID token | 768-dim normalized embedding. |
-| `POST /api/gemini/digest` | ID token | Week-in-review letter from metadata only. |
-| `GET /api/admin/system-stats` | ID token + `role: admin` | Uptime and rate-limit counters. |
+The rules also *bound* what an owner may write: caps on message count, title length,
+summary length, and the search vector, and a rejection of coordinates outside real
+latitude and longitude ranges. "Your own data" is not the same as "unlimited data".
 
-**The client talks to Firestore directly, and that is deliberate.** Journal reads and
-writes are authorized by security rules rather than proxied through the server, so the
-rules file is the single, auditable trust boundary — which is exactly the artifact a
-reviewer should be reading. The server exists only to hold the Gemini key and to
-enforce what rules cannot.
+Sign-in tokens are verified on the server against Google's public keys, with the
+issuer and audience pinned, so a token minted for another project is rejected.
 
----
+## Keys never reach the browser
 
-## Security model
+The Gemini key is pulled from **Google Cloud Secret Manager** at deploy time. It is not
+in the repository, not in the container image, and never sent to the client. Local
+environment files are explicitly excluded from the build context so a developer's key
+cannot ride along into a deployment.
 
-### 1. The database is isolated by rules, not by convention
+Every error returned to a browser passes through a scrubber that redacts anything
+shaped like a Google API key — in both the legacy and current key formats — so a
+provider error can never echo a key back to a user.
 
-```javascript
-match /users/{userId}/entries/{entryId} {
-  allow read: if isOwner(userId);
+A user's own key, if they supply one, stays in their browser. It is never written to
+the database, never logged, and never cached on the server.
 
-  // create/update and delete must be granted separately. `write` covers all
-  // three, but on a delete there is no incoming document, so request.resource
-  // is null and any validation helper reading it fails — which silently
-  // denied every deletion.
-  allow create, update: if isOwner(userId)
-                        && hasValidLocation()
-                        && isWithinSizeBounds();
-  allow delete: if isOwner(userId);
-}
-```
+> The Firebase configuration visible in the client is a public project **identifier**,
+> not a credential. It authorises nothing on its own — access is governed entirely by
+> the security rules and the sign-in domain allowlist. Google documents it as safe to
+> expose. The key that matters is the Gemini one, and it never leaves the server.
 
-### 2. Admins deliberately cannot read your journal
+## The API is bounded
 
-The obvious implementation gives `role == 'admin'` read access to every user's
-entries. On an app whose entire premise is private reflection, that is a diary
-backdoor wearing an administrator's badge. So admin capability stops at:
-
-- the **profile document** (`uid`, `email`, `displayName`) — read-only, no write;
-- the `/admin_data` collection;
-- server routes under `/api/admin/*`, which return uptime and rate-limit counters.
-
-There is **no code path, client or server, that lets an administrator read entry
-content.** This costs us an admin feature. That is the point.
-
-### 3. Documents are bounded
-
-A signed-in user can only write to their own subcollection — but "their own" is not
-the same as "unlimited". Rules cap messages (200), title (200 chars), summary
-(2 000 chars), and the embedding vector (768 floats), and reject coordinates outside
-real latitude/longitude ranges.
-
-### 4. The API is bounded
-
-| Control | Value |
+| Control | Limit |
 |---|---|
-| Request body | 64 KB (`express.json`) |
-| Conversation | 100 messages / 24 000 characters |
-| Rate limit | 20 requests / 5 minutes, **per user** |
-| Model call timeout | 15 s per model, across a 4-model fallback ladder |
-| Time to first token | 12 s per model before falling to the next |
-| Digest input | 30 entries, metadata only |
+| Request size | 64 KB |
+| Conversation length | 100 messages / 24,000 characters |
+| Rate limit | 20 requests per 5 minutes, per user |
+| Model timeout | 15 seconds per model, across four models |
+| Digest input | 30 entries, outline only |
 
-Rate limiting is an in-memory sliding window per instance — honest for a service
-deployed with a low `--max-instances`, and marked in the source with its ceiling and
-upgrade path. Callers supplying their own Gemini key bypass the limit, because they
-are not spending our quota.
+## Browser hardening
 
-### 5. Keys never leak
-
-- The Gemini key is injected from **Secret Manager**; it is never committed, never
-  bundled, and never sent to the browser.
-- Every error returned to a client passes through a scrubber that redacts anything
-  matching a Google API key — in **both** formats, the legacy 39-character `AIza…`
-  and the newer 53-character `AQ.…` — so a provider error can never echo a key back.
-- A user-supplied BYOK key lives in `localStorage` only. It is never written to
-  Firestore, never logged, and never cached server-side.
-- `.gcloudignore` explicitly excludes `.env`, so a local secret cannot ride along into
-  a build context.
-
-### 6. Browser-side hardening
-
-`Content-Security-Policy` (production only, since the Vite dev server needs inline
-scripts), plus `X-Content-Type-Options`, `X-Frame-Options: DENY`,
-`Referrer-Policy`, `Strict-Transport-Security`, and a `Permissions-Policy` that
-grants only the microphone and geolocation the app actually uses.
-
-### 7. About the Firebase config in `src/lib/firebase.ts`
-
-It is committed on purpose, and it is not a leak. A Firebase Web API key is a public
-project **identifier**, not a credential — it authorizes nothing on its own. Access is
-governed by Firestore security rules and the Authorized Domains allowlist. Google
-documents it as safe to expose in client code. The secret that *does* matter — the
-Gemini key — is the one in Secret Manager, and it never reaches the browser.
+A Content Security Policy in production, plus HSTS, `nosniff`, clickjacking
+protection, a strict referrer policy, and a permissions policy that grants only the
+microphone and location the app actually uses — and nothing else, camera included.
 
 ---
 
-## Running locally
+# Google Cloud services used
+
+- **Firebase Authentication** — Google single sign-on; tokens verified server-side.
+- **Gemini API** — multi-turn reflection, entry analysis, and the weekly letter.
+- **Gemini Embeddings** — the vectors behind semantic memory search.
+- **Cloud Firestore** — per-user entry storage, isolated by security rules.
+- **Secret Manager** — secure retrieval of the Gemini API key at deploy time.
+- **Google Maps JavaScript API** — the location picker.
+- **Cloud Run** — hosting, with `/api/health` as the probe target.
+
+---
+
+# Run it yourself
 
 ```bash
 npm install
@@ -418,35 +336,20 @@ cp .env.example .env      # add your GEMINI_API_KEY
 npm run dev               # http://localhost:3000
 ```
 
-The map picker needs `VITE_GOOGLE_MAPS_API_KEY` in `.env`. Without it the app still
-runs — live location and manual coordinate entry both work.
+Add `VITE_GOOGLE_MAPS_API_KEY` to `.env` for the map picker. Without it the app still
+runs — live location and manual coordinates both work.
 
-## Tests
+# Deploy it yourself
 
-```bash
-npm run lint          # tsc --noEmit
-npm run test:rbac     # 31 assertions: RBAC, rate limiting, input caps, key redaction
-npm run test:search   # 12 assertions: cosine maths + live embedding ranking
-```
-
-`test:rbac` imports the real middleware out of `server.ts` rather than
-reimplementing it, so it fails when the server changes. `test:search` makes a live
-call to the embedding endpoint and asserts that a semantically related memory
-actually outranks an unrelated one — it fails on a ranking regression, not just a
-maths one.
-
-## Deploying to Cloud Run
-
-> Billing must be enabled on the project first — Cloud Run, Secret Manager, and Maps
-> Platform all require it.
+Billing must be enabled — Cloud Run, Secret Manager, and Maps Platform all require it.
 
 ```bash
-# 1. APIs
+# 1. Enable the APIs
 gcloud services enable run.googleapis.com secretmanager.googleapis.com \
   cloudbuild.googleapis.com artifactregistry.googleapis.com \
   generativelanguage.googleapis.com maps-backend.googleapis.com
 
-# 2. Store the Gemini key in Secret Manager
+# 2. Put the Gemini key in Secret Manager
 gcloud secrets create GEMINI_API_KEY --replication-policy="automatic"
 printf '%s' "YOUR_GEMINI_API_KEY" | gcloud secrets versions add GEMINI_API_KEY --data-file=-
 
@@ -455,76 +358,35 @@ gcloud secrets add-iam-policy-binding GEMINI_API_KEY \
   --member="serviceAccount:${PROJECT_NUMBER}-compute@developer.gserviceaccount.com" \
   --role="roles/secretmanager.secretAccessor"
 
-# 3. Deploy (Node buildpacks — no Dockerfile needed; `npm start` is the entrypoint)
-#
-# VITE_GOOGLE_MAPS_API_KEY must be a BUILD env var, not a runtime one: Vite
-# inlines it into the bundle during `npm run build`. `.env` is excluded from the
-# build context by .gcloudignore (so secrets cannot ride along), so without
-# --set-build-env-vars the deployed bundle would ship with no Maps key at all.
+# 3. Deploy
 gcloud run deploy ai-journal-reflections \
   --source . \
   --set-secrets=GEMINI_API_KEY=GEMINI_API_KEY:latest \
   --set-env-vars=NODE_ENV=production \
   --set-build-env-vars=VITE_GOOGLE_MAPS_API_KEY=YOUR_MAPS_BROWSER_KEY \
-  --allow-unauthenticated \
-  --max-instances=2 \
-  --region=us-central1
+  --allow-unauthenticated --max-instances=2 --region=us-central1
 
-# 4. Challenge label
-gcloud run services update ai-journal-reflections \
-  --update-labels=dev-tutorial=cloud-run-ai-challenge \
-  --region=us-central1
-
-# 5. Security rules
+# 4. Deploy the security rules
 firebase deploy --only firestore:rules
 ```
 
-**After deploying:**
+**The Maps key must be a *build* variable, not a runtime one.** Vite bakes
+`VITE_`-prefixed values into the bundle during the build. Passing it as
+`--set-env-vars` produces a deployed app with no map at all.
 
-1. Add the Cloud Run URL to Firebase Console → Authentication → Settings →
-   **Authorized domains**, or Google sign-in will fail in production while working
-   locally.
-2. Add the Cloud Run URL as an **HTTP referrer restriction** on the Maps browser key
-   (Console → APIs & Services → Credentials).
+**Three things to do after the first deploy:**
 
-### Granting yourself the admin role
+1. Add your Cloud Run URL to Firebase Console → Authentication → Settings →
+   **Authorized domains**, or sign-in works locally and fails in production.
+2. Restrict the Maps key by **HTTP referrer** (Console → Credentials) to your Cloud
+   Run URL. A browser key is necessarily visible in the bundle, so the referrer
+   allowlist is what stops someone else spending it.
+3. Confirm it is up:
 
-```bash
-npx tsx scripts/bootstrap-admin.ts <UID>
-```
-
-Sets the `role` custom claim via the Admin SDK. A client cannot set its own claim.
-
----
-
-## Verifying a deployment
-
-```bash
-URL=https://ai-journal-reflections-202050000797.us-central1.run.app
-curl -s $URL/api/health                                # 200 {"status":"ok",...}
-curl -s -o /dev/null -w '%{http_code}\n' -X POST \
-  -H 'Content-Type: application/json' -d '{"messages":[]}' \
-  $URL/api/gemini/reflect                              # 401 — no token
-curl -s -o /dev/null -w '%{http_code}\n' $URL/assets/nope.js   # 404, loudly
-```
-
-Then in the browser:
-
-1. Sign in with Google; write a reflection and watch the reply stream in.
-2. Press the mic and dictate an entry.
-3. **Synthesize & Catalog** — generates title, summary, mood, category, and the
-   search embedding in one pass.
-4. Switch the sidebar search to **Meaning** and search for a feeling, not a word.
-5. Tag an entry with **Use my current location** and confirm the coordinates fill in.
-6. Open **Insights** and generate your week in review.
-7. Delete an entry.
-8. Sign out, sign in as a different Google account, and confirm the sidebar is empty.
-
----
-
-## Built with Google AI Studio
-
-The custom instructions used to drive the AI coding agent — including the scope
-discipline rules and the Maps API key directive — are in
-[`docs/CUSTOM_INSTRUCTIONS.md`](docs/CUSTOM_INSTRUCTIONS.md). The development
-timeline is in [`progress.md`](progress.md).
+   ```bash
+   URL=https://your-service.run.app
+   curl -s $URL/api/health                                        # 200
+   curl -s -o /dev/null -w '%{http_code}\n' -X POST \
+     -H 'Content-Type: application/json' -d '{"messages":[]}' \
+     $URL/api/gemini/reflect                                      # 401, no token
+   ```

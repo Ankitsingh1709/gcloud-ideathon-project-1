@@ -214,6 +214,9 @@ const FALLBACK_MODELS = [
 const EMBEDDING_MODEL = "gemini-embedding-001";
 const EMBEDDING_DIMENSIONS = 768;
 const MODEL_TIMEOUT_MS = 15000;
+// A streaming reply must show something quickly or move to the next model;
+// measured first-token latency is ~4-7s, so this leaves real headroom.
+const FIRST_TOKEN_TIMEOUT_MS = 12000;
 
 // ponytail: Promise.race leaks the in-flight request but bounds user-facing
 // latency, which is what a four-model ladder actually needs. Swap for
@@ -488,21 +491,65 @@ app.post('/api/gemini/reflect/stream', geminiGuards, async (req: any, res: any) 
 
   try {
     const client = getAiClient(req.byokKey);
-    // Single model on purpose: falling back mid-stream would replay text the
-    // user has already watched appear.
-    const model = FALLBACK_MODELS[0];
-    const stream = await client.models.generateContentStream({
-      model,
-      contents: formattedContents,
-      config: { systemInstruction: JOURNAL_SYSTEM_INSTRUCTION }
-    });
 
-    for await (const chunk of stream as any) {
-      const text = chunk?.text;
-      if (text) res.write(`data: ${JSON.stringify({ text })}\n\n`);
+    // Falling back between models is safe ONLY until the first token is
+    // written — after that the user has watched text appear and replaying it
+    // would duplicate what they already read. So each model gets a deadline to
+    // produce its first token; miss it, and we move on having shown nothing.
+    let committedModel: string | null = null;
+    let lastError: any = null;
+
+    for (const model of FALLBACK_MODELS) {
+      try {
+        const stream: any = await withTimeout(
+          client.models.generateContentStream({
+            model,
+            contents: formattedContents,
+            config: { systemInstruction: JOURNAL_SYSTEM_INSTRUCTION }
+          }),
+          `Model ${model}`
+        );
+
+        const iterator = stream[Symbol.asyncIterator]();
+
+        // Race only the FIRST chunk. Once it lands we are committed and the
+        // rest of the stream is read without a per-chunk deadline.
+        let timer: any;
+        const firstChunk: any = await Promise.race([
+          iterator.next(),
+          new Promise((_, reject) => {
+            timer = setTimeout(
+              () => reject(new Error(`Model ${model} produced no token in ${FIRST_TOKEN_TIMEOUT_MS}ms`)),
+              FIRST_TOKEN_TIMEOUT_MS
+            );
+          }),
+        ]);
+        clearTimeout(timer);
+
+        committedModel = model;
+        if (!firstChunk.done && firstChunk.value?.text) {
+          res.write(`data: ${JSON.stringify({ text: firstChunk.value.text })}\n\n`);
+        }
+        for (let next = await iterator.next(); !next.done; next = await iterator.next()) {
+          if (next.value?.text) res.write(`data: ${JSON.stringify({ text: next.value.text })}\n\n`);
+        }
+
+        res.write(`data: ${JSON.stringify({ done: true, modelUsed: model })}\n\n`);
+        res.end();
+        return;
+      } catch (error: any) {
+        lastError = error;
+        console.warn(`Stream model ${model} failed before first token:`, safeMessage(error));
+        if (committedModel) {
+          // Already streamed visible text — cannot retry another model.
+          res.write(`data: ${JSON.stringify({ error: safeMessage(error) })}\n\n`);
+          res.end();
+          return;
+        }
+      }
     }
-    res.write(`data: ${JSON.stringify({ done: true, modelUsed: model })}\n\n`);
-    res.end();
+
+    throw new Error(`All streaming models failed. Last error: ${safeMessage(lastError)}`);
   } catch (error: any) {
     console.error('Error in /api/gemini/reflect/stream:', safeMessage(error));
     // Headers are already sent, so the failure has to travel inside the stream.

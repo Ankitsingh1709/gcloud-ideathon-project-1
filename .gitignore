@@ -7,3 +7,12 @@ coverage/
 .env*
 !.env.example
 firebase-applet-config.json
+
+# graft (local tooling)
+.graft/
+
+# Claude Code local config & skills (personal, not for the repo)
+.claude/
+CLAUDE_SKILLS.txt
+.impeccable/
+CLAUDE.md

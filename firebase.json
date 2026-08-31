@@ -1,0 +1,6 @@
+{
+  "firestore": {
+    "database": "ai-studio-aijournalreflect-efe71797-fc66-4416-b95f-482b5b1daee6",
+    "rules": "firestore.rules"
+  }
+}

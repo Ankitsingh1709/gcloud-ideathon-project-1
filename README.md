@@ -39,7 +39,7 @@ Confirmed against the submission form:
 - **Others:**
   - **Gemini Embeddings** (`gemini-embedding-001`) for semantic memory search.
   - **Google Maps JavaScript API** for location tagging.
-  - **Cloud Run** for hosting, with `/healthz` as a probe target.
+  - **Cloud Run** for hosting, with `/api/health` as a probe target.
 
 ---
 
@@ -239,7 +239,7 @@ Sets the `role` custom claim via the Admin SDK. A client cannot set its own clai
 
 ```bash
 URL=https://your-service.run.app
-curl -s $URL/healthz                                   # 200
+curl -s $URL/api/health                                # 200
 curl -s -o /dev/null -w '%{http_code}\n' -X POST \
   -H 'Content-Type: application/json' -d '{"messages":[]}' \
   $URL/api/gemini/reflect                              # 401 — no token

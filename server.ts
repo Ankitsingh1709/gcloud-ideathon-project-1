@@ -326,7 +326,12 @@ export function validateMessages(messages: any): string | null {
 
 // Health probe: unauthenticated by design so Cloud Run can use it as a
 // startup/liveness check without minting a token.
-app.get('/healthz', (_req, res) => {
+//
+// Deliberately NOT /healthz. Cloud Run runs on Knative, whose queue-proxy
+// sidecar sits in front of this container and reserves that path for its own
+// probes — a route registered there is shadowed and answers with Google's
+// 404 page instead of ever reaching Express.
+app.get('/api/health', (_req, res) => {
   res.json({ status: 'ok', version: APP_VERSION, uptimeSeconds: process.uptime() });
 });
 

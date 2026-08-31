@@ -172,23 +172,23 @@ export default function AdminDashboard() {
   };
 
   return (
-    <main className="flex-1 bg-[#0a0a0a] flex flex-col h-full overflow-y-auto" id="admin-dashboard-container">
+    <main className="flex-1 bg-ink-950 flex flex-col h-full overflow-y-auto" id="admin-dashboard-container">
       {/* Header */}
-      <header className="px-8 py-6 border-b border-[#2a2a2a] bg-[#0c0c0c]/80 backdrop-blur-md flex items-center justify-between sticky top-0 z-10">
+      <header className="px-8 py-6 border-b border-ink-700 bg-ink-900/80 backdrop-blur-md flex items-center justify-between sticky top-0 z-10">
         <div className="flex items-center space-x-3">
           <div className="bg-purple-950/40 border border-purple-500/30 p-2.5 rounded-2xl text-purple-400 shrink-0">
             <ShieldAlert className="w-6 h-6" />
           </div>
           <div>
-            <h1 className="text-xl font-bold text-white tracking-tight">Admin Operations</h1>
-            <p className="text-xs text-[#666] font-semibold">Server-Side Role-Based Access Control Console</p>
+            <h1 className="text-xl font-bold text-paper-50 tracking-tight">Admin Operations</h1>
+            <p className="text-xs text-paper-600 font-semibold">Server-Side Role-Based Access Control Console</p>
           </div>
         </div>
 
         <button
           onClick={() => fetchStats(true)}
           disabled={refreshing}
-          className="flex items-center space-x-2 bg-[#1a1a1a] hover:bg-[#252525] border border-[#2a2a2a] text-[#ccc] hover:text-white px-4 py-2 rounded-xl text-xs font-semibold tracking-wider uppercase transition cursor-pointer disabled:opacity-50"
+          className="flex items-center space-x-2 bg-ink-850 hover:bg-ink-800 border border-ink-700 text-paper-400 hover:text-paper-50 px-4 py-2 rounded-xl text-xs font-semibold tracking-wider uppercase transition cursor-pointer disabled:opacity-50"
         >
           <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin text-purple-400' : ''}`} />
           <span>Sync Status</span>
@@ -198,35 +198,35 @@ export default function AdminDashboard() {
       {/* Main Content Pane */}
       <div className="max-w-4xl mx-auto w-full p-8 space-y-8">
         {/* Bootstrap Instruction Box */}
-        <section className="bg-[#121118] border border-[#3c1d95]/40 rounded-2xl p-6 relative overflow-hidden">
+        <section className="bg-ink-900 border border-ember-900/40 rounded-2xl p-6 relative overflow-hidden">
           <div className="flex items-start space-x-4">
-            <div className="bg-[#1c142b] p-3 rounded-xl border border-purple-900/40 text-[#8b5cf6] shrink-0 mt-1">
+            <div className="bg-ember-950 p-3 rounded-xl border border-purple-900/40 text-ember-500 shrink-0 mt-1">
               <Terminal className="w-5 h-5" />
             </div>
             <div className="space-y-2 flex-1 min-w-0">
-              <h2 className="text-sm font-bold text-white tracking-wide uppercase">Offline Claims bootstrapping</h2>
-              <p className="text-xs text-[#999] leading-relaxed">
+              <h2 className="text-sm font-bold text-paper-50 tracking-wide uppercase">Offline Claims bootstrapping</h2>
+              <p className="text-xs text-paper-500 leading-relaxed">
                 As required by absolute least privilege, new users receive no elevated roles by default.
                 To assign your account as the first administrator, run the secure out-of-band bootstrap utility from your terminal.
               </p>
               
-              <div className="mt-4 space-y-3 bg-[#070709] border border-[#1e1b26] p-4 rounded-xl">
-                <div className="flex items-center justify-between text-xs text-[#888] pb-2 border-b border-[#14121a]">
+              <div className="mt-4 space-y-3 bg-ink-950 border border-ember-950 p-4 rounded-xl">
+                <div className="flex items-center justify-between text-xs text-paper-500 pb-2 border-b border-ink-900">
                   <span>YOUR LOCAL UNIQUE USER ID (UID)</span>
                   <button 
                     onClick={handleCopyUid}
-                    className="text-[#8b5cf6] hover:text-[#d946ef] flex items-center space-x-1 font-bold cursor-pointer transition"
+                    className="text-ember-500 hover:text-ember-400 flex items-center space-x-1 font-bold cursor-pointer transition"
                   >
                     {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
                     <span>{copied ? 'Copied' : 'Copy UID'}</span>
                   </button>
                 </div>
-                <div className="font-mono text-xs text-white truncate break-all py-1">
+                <div className="font-mono text-xs text-paper-50 truncate break-all py-1">
                   {currentUserUid}
                 </div>
               </div>
 
-              <div className="mt-3 bg-[#1e1b26]/50 p-3 rounded-xl border border-[#4c1d95]/20">
+              <div className="mt-3 bg-ember-950/50 p-3 rounded-xl border border-ember-900/20">
                 <span className="text-[10px] uppercase font-bold tracking-wider text-purple-400 block mb-1">Terminal bootstrap command:</span>
                 <code className="font-mono text-xs text-purple-200 select-all block break-all">
                   npx tsx scripts/bootstrap-admin.ts "{currentUserUid}"
@@ -238,20 +238,20 @@ export default function AdminDashboard() {
 
         {/* Real-time System Overview */}
         <section className="space-y-4">
-          <h2 className="text-xs font-bold text-[#666] uppercase tracking-widest">Real-time System Overview</h2>
+          <h2 className="text-xs font-bold text-paper-600 uppercase tracking-widest">Real-time System Overview</h2>
           
           {loading ? (
-            <div className="bg-[#121212] border border-[#222] p-8 rounded-2xl flex flex-col items-center justify-center text-center space-y-3">
-              <RefreshCw className="w-6 h-6 animate-spin text-[#8b5cf6]" />
-              <p className="text-xs text-[#666] font-semibold">Reading system metrics from server...</p>
+            <div className="bg-ink-900 border border-ink-800 p-8 rounded-2xl flex flex-col items-center justify-center text-center space-y-3">
+              <RefreshCw className="w-6 h-6 animate-spin text-ember-500" />
+              <p className="text-xs text-paper-600 font-semibold">Reading system metrics from server...</p>
             </div>
           ) : error ? (
-            <div className="bg-[#1a1212] border border-red-900/30 p-6 rounded-2xl flex items-start space-x-4">
+            <div className="bg-ink-850 border border-red-900/30 p-6 rounded-2xl flex items-start space-x-4">
               <AlertCircle className="w-5 h-5 text-rose-400 shrink-0 mt-0.5" />
               <div className="space-y-1">
-                <p className="text-xs font-bold text-white uppercase tracking-wider">Operational Isolation Active</p>
+                <p className="text-xs font-bold text-paper-50 uppercase tracking-wider">Operational Isolation Active</p>
                 <p className="text-xs text-rose-300/80 leading-relaxed">{error}</p>
-                <p className="text-[10px] text-[#666] mt-2 font-medium">
+                <p className="text-[10px] text-paper-600 mt-2 font-medium">
                   This indicates your user account has not yet been bootstrap promoted or the claims are still syncing. Sign out and sign in again after promoting.
                 </p>
               </div>
@@ -259,38 +259,38 @@ export default function AdminDashboard() {
           ) : stats ? (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* Stat 1 */}
-              <div className="bg-[#121212] border border-[#222] p-6 rounded-2xl flex items-center space-x-4">
+              <div className="bg-ink-900 border border-ink-800 p-6 rounded-2xl flex items-center space-x-4">
                 <div className="bg-emerald-950/30 border border-emerald-900/30 p-3 rounded-xl text-emerald-400 shrink-0">
                   <CheckCircle2 className="w-6 h-6" />
                 </div>
                 <div>
-                  <p className="text-xs text-[#666] font-semibold uppercase tracking-wider">Gateway Status</p>
-                  <p className="text-lg font-bold text-white mt-0.5">{stats.status.toUpperCase()}</p>
-                  <p className="text-[10px] text-[#444] mt-0.5">Uptime: {formatUptime(stats.uptimeSeconds)}</p>
+                  <p className="text-xs text-paper-600 font-semibold uppercase tracking-wider">Gateway Status</p>
+                  <p className="text-lg font-bold text-paper-50 mt-0.5">{stats.status.toUpperCase()}</p>
+                  <p className="text-[10px] text-ink-600 mt-0.5">Uptime: {formatUptime(stats.uptimeSeconds)}</p>
                 </div>
               </div>
 
               {/* Stat 2 */}
-              <div className="bg-[#121212] border border-[#222] p-6 rounded-2xl flex items-center space-x-4">
+              <div className="bg-ink-900 border border-ink-800 p-6 rounded-2xl flex items-center space-x-4">
                 <div className="bg-purple-950/30 border border-purple-900/30 p-3 rounded-xl text-purple-400 shrink-0">
                   <Activity className="w-6 h-6" />
                 </div>
                 <div>
-                  <p className="text-xs text-[#666] font-semibold uppercase tracking-wider">Active Metrics</p>
-                  <p className="text-lg font-bold text-white mt-0.5">{stats.systemMetrics.totalRequestsServed} Requests</p>
-                  <p className="text-[10px] text-[#444] mt-0.5">Admin Sessions: {stats.systemMetrics.activeSessions}</p>
+                  <p className="text-xs text-paper-600 font-semibold uppercase tracking-wider">Active Metrics</p>
+                  <p className="text-lg font-bold text-paper-50 mt-0.5">{stats.systemMetrics.totalRequestsServed} Requests</p>
+                  <p className="text-[10px] text-ink-600 mt-0.5">Admin Sessions: {stats.systemMetrics.activeSessions}</p>
                 </div>
               </div>
 
               {/* Stat 3 */}
-              <div className="bg-[#121212] border border-[#222] p-6 rounded-2xl flex items-center space-x-4 md:col-span-2">
+              <div className="bg-ink-900 border border-ink-800 p-6 rounded-2xl flex items-center space-x-4 md:col-span-2">
                 <div className="bg-blue-950/30 border border-blue-900/30 p-3 rounded-xl text-blue-400 shrink-0">
                   <Cpu className="w-6 h-6" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-xs text-[#666] font-semibold uppercase tracking-wider">Verified Admin Session Context</p>
-                  <p className="text-sm font-bold text-white mt-0.5 truncate">{stats.adminEmail}</p>
-                  <p className="text-[10px] text-[#444] mt-0.5 truncate">Signature ID: {stats.adminRequestUid}</p>
+                  <p className="text-xs text-paper-600 font-semibold uppercase tracking-wider">Verified Admin Session Context</p>
+                  <p className="text-sm font-bold text-paper-50 mt-0.5 truncate">{stats.adminEmail}</p>
+                  <p className="text-[10px] text-ink-600 mt-0.5 truncate">Signature ID: {stats.adminRequestUid}</p>
                 </div>
               </div>
             </div>
@@ -300,7 +300,7 @@ export default function AdminDashboard() {
         {/* Dynamic Exit Verification Audits */}
         <section className="space-y-4">
           <div className="flex items-center justify-between">
-            <h2 className="text-xs font-bold text-[#666] uppercase tracking-widest">Dynamic Exit Verification Audits</h2>
+            <h2 className="text-xs font-bold text-paper-600 uppercase tracking-widest">Dynamic Exit Verification Audits</h2>
             <span className="text-[10px] uppercase font-bold tracking-wider text-emerald-400 bg-emerald-950/30 px-2.5 py-1 rounded-full border border-emerald-900/30">
               Zero-Trust Architecture Verified
             </span>
@@ -308,20 +308,20 @@ export default function AdminDashboard() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Audit Card 1 - Express API */}
-            <div className="bg-[#121212] border border-[#222] p-6 rounded-2xl flex flex-col justify-between space-y-4">
+            <div className="bg-ink-900 border border-ink-800 p-6 rounded-2xl flex flex-col justify-between space-y-4">
               <div>
-                <div className="flex items-center space-x-2 text-[#ccc] font-bold text-sm">
-                  <Key className="w-4 h-4 text-[#8b5cf6]" />
+                <div className="flex items-center space-x-2 text-paper-400 font-bold text-sm">
+                  <Key className="w-4 h-4 text-ember-500" />
                   <span>Verify Backend Express API Gate</span>
                 </div>
-                <p className="text-xs text-[#666] mt-1.5 leading-relaxed">
+                <p className="text-xs text-paper-600 mt-1.5 leading-relaxed">
                   Sends an authorized JWT containing current claims to the `/api/admin/system-stats` route. Verify server-side role validation logic.
                 </p>
               </div>
 
               {auditApiResult.status !== 'idle' && (
                 <div className={`p-3.5 rounded-xl border text-xs leading-relaxed ${
-                  auditApiResult.status === 'testing' ? 'bg-[#18181b] text-[#ccc] border-[#333]' :
+                  auditApiResult.status === 'testing' ? 'bg-ink-850 text-paper-400 border-ink-700' :
                   auditApiResult.status === 'passed' ? 'bg-emerald-950/20 text-emerald-300 border-emerald-900/40' :
                   'bg-rose-950/20 text-rose-300 border-rose-900/40'
                 }`}>
@@ -332,27 +332,27 @@ export default function AdminDashboard() {
               <button
                 onClick={runApiAudit}
                 disabled={auditApiResult.status === 'testing'}
-                className="w-full py-2.5 bg-[#1e1e1e] hover:bg-[#252525] border border-[#333] hover:border-[#444] rounded-xl text-xs font-bold text-white transition cursor-pointer"
+                className="w-full py-2.5 bg-ink-850 hover:bg-ink-800 border border-ink-700 hover:border-ink-600 rounded-xl text-xs font-bold text-paper-50 transition cursor-pointer"
               >
                 Run API Gate Audit
               </button>
             </div>
 
             {/* Audit Card 2 - Firestore Security Rules */}
-            <div className="bg-[#121212] border border-[#222] p-6 rounded-2xl flex flex-col justify-between space-y-4">
+            <div className="bg-ink-900 border border-ink-800 p-6 rounded-2xl flex flex-col justify-between space-y-4">
               <div>
-                <div className="flex items-center space-x-2 text-[#ccc] font-bold text-sm">
+                <div className="flex items-center space-x-2 text-paper-400 font-bold text-sm">
                   <ShieldAlert className="w-4 h-4 text-purple-400" />
                   <span>Verify Firestore Rules Isolation</span>
                 </div>
-                <p className="text-xs text-[#666] mt-1.5 leading-relaxed">
+                <p className="text-xs text-paper-600 mt-1.5 leading-relaxed">
                   Attempts a direct client SDK write to the secure `/admin_data` collection to prove raw, un-proxied database requests are blocked without proper claims.
                 </p>
               </div>
 
               {auditFirestoreResult.status !== 'idle' && (
                 <div className={`p-3.5 rounded-xl border text-xs leading-relaxed ${
-                  auditFirestoreResult.status === 'testing' ? 'bg-[#18181b] text-[#ccc] border-[#333]' :
+                  auditFirestoreResult.status === 'testing' ? 'bg-ink-850 text-paper-400 border-ink-700' :
                   auditFirestoreResult.status === 'passed' ? 'bg-emerald-950/20 text-emerald-300 border-emerald-900/40' :
                   'bg-rose-950/20 text-rose-300 border-rose-900/40'
                 }`}>
@@ -363,7 +363,7 @@ export default function AdminDashboard() {
               <button
                 onClick={runFirestoreAudit}
                 disabled={auditFirestoreResult.status === 'testing'}
-                className="w-full py-2.5 bg-[#1e1e1e] hover:bg-[#252525] border border-[#333] hover:border-[#444] rounded-xl text-xs font-bold text-white transition cursor-pointer"
+                className="w-full py-2.5 bg-ink-850 hover:bg-ink-800 border border-ink-700 hover:border-ink-600 rounded-xl text-xs font-bold text-paper-50 transition cursor-pointer"
               >
                 Run Rules Isolation Audit
               </button>

@@ -221,39 +221,39 @@ export default function InsightsDashboard({ entries }: InsightsDashboardProps) {
   };
 
   return (
-    <div className="flex-1 flex flex-col bg-[#0a0a0a] overflow-y-auto p-8 space-y-8" id="insights-dashboard-root">
+    <div className="flex-1 flex flex-col bg-ink-950 overflow-y-auto p-8 space-y-8" id="insights-dashboard-root">
       {/* Tab Header Header */}
-      <div className="flex flex-col md:flex-row items-start md:items-center justify-between border-b border-[#2a2a2a] pb-6 space-y-4 md:space-y-0">
+      <div className="flex flex-col md:flex-row items-start md:items-center justify-between border-b border-ink-700 pb-6 space-y-4 md:space-y-0">
         <div className="space-y-1.5 text-left">
           <div className="flex items-center space-x-2">
-            <BrainCircuit className="w-5 h-5 text-[#8b5cf6]" />
-            <h1 className="text-xl font-bold text-white tracking-tight">Personal Reflection Insights</h1>
+            <BrainCircuit className="w-5 h-5 text-ember-500" />
+            <h1 className="text-xl font-bold text-paper-50 tracking-tight">Personal Reflection Insights</h1>
           </div>
-          <p className="text-xs text-[#888] leading-relaxed max-w-xl">
+          <p className="text-xs text-paper-500 leading-relaxed max-w-xl">
             A dynamic, client-side intelligence dashboard compiling emotional, psychological, and categorization trends derived securely from your isolated past reflections.
           </p>
         </div>
-        <div className="flex items-center space-x-1.5 bg-[#121212] border border-[#222] px-3 py-1.5 rounded-full text-[10px] text-emerald-400 font-bold uppercase tracking-wider">
+        <div className="flex items-center space-x-1.5 bg-ink-900 border border-ink-800 px-3 py-1.5 rounded-full text-[10px] text-emerald-400 font-bold uppercase tracking-wider">
           <ShieldCheck className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
           <span>Private uid-scoped queries only</span>
         </div>
       </div>
 
       {/* Weekly Digest — a letter Gemini writes back to you */}
-      <div className="bg-gradient-to-br from-[#140f1f] to-[#0c0c0c] border border-[#4c1d95]/30 rounded-2xl p-6 space-y-4 text-left" id="weekly-digest-panel">
+      <div className="bg-ink-900 border border-ink-800 rounded-2xl p-6 space-y-4 text-left" id="weekly-digest-panel">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="space-y-1">
             <div className="flex items-center space-x-2">
-              <Mail className="w-4 h-4 text-[#d946ef]" />
-              <h2 className="text-sm font-bold text-white tracking-tight">
+              <Mail className="w-4 h-4 text-ember-400" />
+              <h2 className="text-sm font-bold text-paper-50 tracking-tight">
                 {digestPeriod === 'week' ? 'Your Week in Review' : 'Your Journal So Far'}
               </h2>
             </div>
-            <p className="text-[11px] text-[#888] leading-relaxed max-w-xl">
+            <p className="text-[11px] text-paper-500 leading-relaxed max-w-xl">
               Gemini reads the shape of your entries — dates, moods, categories and one-line
               summaries — and writes back. Full journal text never leaves your browser for this.
             </p>
-            <div className="flex items-center gap-1 bg-[#0c0c0c] border border-[#2a2a2a] rounded-lg p-0.5 w-fit" role="group" aria-label="Digest period">
+            <div className="flex items-center gap-1 bg-ink-900 border border-ink-700 rounded-lg p-0.5 w-fit" role="group" aria-label="Digest period">
               {([['week', `This week (${thisWeekEntries.length})`], ['all', `All time (${cataloguedEntries.length})`]] as const).map(([value, label]) => (
                 <button
                   key={value}
@@ -261,7 +261,7 @@ export default function InsightsDashboard({ entries }: InsightsDashboardProps) {
                   onClick={() => { setDigestPeriod(value); setDigest(null); setDigestError(null); }}
                   aria-pressed={digestPeriod === value}
                   className={`px-2.5 py-1 rounded-md text-[10px] font-bold transition cursor-pointer ${
-                    digestPeriod === value ? 'bg-[#2a1f3d] text-[#c4b5fd]' : 'text-[#666] hover:text-[#aaa]'
+                    digestPeriod === value ? 'bg-ember-950 text-ember-300' : 'text-paper-600 hover:text-paper-400'
                   }`}
                 >
                   {label}
@@ -274,7 +274,7 @@ export default function InsightsDashboard({ entries }: InsightsDashboardProps) {
             onClick={generateDigest}
             disabled={digestLoading || digestCandidates.length === 0}
             id="generate-digest-btn"
-            className="shrink-0 inline-flex items-center justify-center space-x-2 bg-[#8b5cf6] hover:bg-[#7c3aed] disabled:opacity-40 text-white font-bold text-xs px-4 py-2.5 rounded-xl transition cursor-pointer"
+            className="shrink-0 inline-flex items-center justify-center space-x-2 bg-ember-500 hover:bg-ember-600 disabled:opacity-40 text-paper-50 font-bold text-xs px-4 py-2.5 rounded-xl transition cursor-pointer"
           >
             {digestLoading
               ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -284,7 +284,7 @@ export default function InsightsDashboard({ entries }: InsightsDashboardProps) {
         </div>
 
         {digestCandidates.length === 0 && (
-          <p className="text-[11px] text-[#666]">
+          <p className="text-[11px] text-paper-600">
             {digestPeriod === 'week' && cataloguedEntries.length > 0
               ? <>No catalogued reflections in the past seven days. Switch to <strong>All time</strong> to look further back.</>
               : <>Catalog at least one reflection to unlock your letter.</>}
@@ -299,7 +299,8 @@ export default function InsightsDashboard({ entries }: InsightsDashboardProps) {
         )}
 
         {digest && (
-          <p className="text-sm text-[#ddd] leading-relaxed whitespace-pre-wrap border-t border-[#2a2a2a] pt-4">
+          /* Rare and slow to arrive — the reveal is earned here. */
+          <p className="prose-journal text-[15px] text-paper-200 whitespace-pre-wrap border-t border-ink-800 pt-5 animate-rise">
             {digest}
           </p>
         )}
@@ -307,54 +308,54 @@ export default function InsightsDashboard({ entries }: InsightsDashboardProps) {
 
       {/* Hero Stats Panel */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4" id="insights-grid-stats">
-        <div className="bg-[#0c0c0c]/80 border border-[#222] rounded-2xl p-5 space-y-2 text-left">
+        <div className="bg-ink-900/80 border border-ink-800 rounded-2xl p-5 space-y-2 text-left">
           <div className="flex items-center justify-between">
-            <span className="text-[10px] uppercase font-bold tracking-wider text-[#666]">Total Reflections</span>
-            <BookOpen className="w-4 h-4 text-[#8b5cf6]" />
+            <span className="text-[10px] uppercase font-bold tracking-wider text-paper-600">Total Reflections</span>
+            <BookOpen className="w-4 h-4 text-ember-500" />
           </div>
-          <p className="text-2xl font-black text-white">{stats.totalReflections}</p>
-          <p className="text-[10px] text-[#555]">Preserved entries in database</p>
+          <p className="text-2xl font-black text-paper-50">{stats.totalReflections}</p>
+          <p className="text-[10px] text-paper-700">Preserved entries in database</p>
         </div>
 
-        <div className="bg-[#0c0c0c]/80 border border-[#222] rounded-2xl p-5 space-y-2 text-left">
+        <div className="bg-ink-900/80 border border-ink-800 rounded-2xl p-5 space-y-2 text-left">
           <div className="flex items-center justify-between">
-            <span className="text-[10px] uppercase font-bold tracking-wider text-[#666]">Active Streak</span>
-            <Flame className="w-4 h-4 text-[#d946ef]" />
+            <span className="text-[10px] uppercase font-bold tracking-wider text-paper-600">Active Streak</span>
+            <Flame className="w-4 h-4 text-ember-400" />
           </div>
-          <p className="text-2xl font-black text-white">{stats.streak} {stats.streak === 1 ? 'Day' : 'Days'}</p>
-          <p className="text-[10px] text-[#555]">Consecutive writing days</p>
+          <p className="text-2xl font-black text-paper-50">{stats.streak} {stats.streak === 1 ? 'Day' : 'Days'}</p>
+          <p className="text-[10px] text-paper-700">Consecutive writing days</p>
         </div>
 
-        <div className="bg-[#0c0c0c]/80 border border-[#222] rounded-2xl p-5 space-y-2 text-left">
+        <div className="bg-ink-900/80 border border-ink-800 rounded-2xl p-5 space-y-2 text-left">
           <div className="flex items-center justify-between">
-            <span className="text-[10px] uppercase font-bold tracking-wider text-[#666]">Primary Category</span>
-            <Sparkles className="w-4 h-4 text-[#10b981]" />
+            <span className="text-[10px] uppercase font-bold tracking-wider text-paper-600">Primary Category</span>
+            <Sparkles className="w-4 h-4 text-emerald-400" />
           </div>
-          <p className="text-base font-bold text-white line-clamp-1">{stats.topCategory}</p>
-          <p className="text-[10px] text-[#555]">Most written focus area</p>
+          <p className="text-base font-bold text-paper-50 line-clamp-1">{stats.topCategory}</p>
+          <p className="text-[10px] text-paper-700">Most written focus area</p>
         </div>
 
-        <div className="bg-[#0c0c0c]/80 border border-[#222] rounded-2xl p-5 space-y-2 text-left">
+        <div className="bg-ink-900/80 border border-ink-800 rounded-2xl p-5 space-y-2 text-left">
           <div className="flex items-center justify-between">
-            <span className="text-[10px] uppercase font-bold tracking-wider text-[#666]">Dominant Mood</span>
+            <span className="text-[10px] uppercase font-bold tracking-wider text-paper-600">Dominant Mood</span>
             <Heart className="w-4 h-4 text-rose-400" />
           </div>
-          <p className="text-lg font-bold text-white line-clamp-1">{stats.topMood}</p>
-          <p className="text-[10px] text-[#555]">Most cataloged sentiment</p>
+          <p className="text-lg font-bold text-paper-50 line-clamp-1">{stats.topMood}</p>
+          <p className="text-[10px] text-paper-700">Most cataloged sentiment</p>
         </div>
       </div>
 
       {stats.totalReflections > 0 ? (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
           {/* Trend Chart (Line chart over last 6 weeks) */}
-          <div className="lg:col-span-8 bg-[#0c0c0c]/80 border border-[#222] rounded-2xl p-5 space-y-4 flex flex-col justify-between min-h-[350px]">
+          <div className="lg:col-span-8 bg-ink-900/80 border border-ink-800 rounded-2xl p-5 space-y-4 flex flex-col justify-between min-h-[350px]">
             <div className="flex items-center justify-between text-left">
               <div className="space-y-1">
-                <h3 className="text-sm font-bold text-white flex items-center space-x-1.5">
-                  <TrendingUp className="w-4 h-4 text-[#8b5cf6]" />
+                <h3 className="text-sm font-bold text-paper-50 flex items-center space-x-1.5">
+                  <TrendingUp className="w-4 h-4 text-ember-500" />
                   <span>Weekly Mood Index Trend</span>
                 </h3>
-                <p className="text-[11px] text-[#666]">Calculated average from mood metadata across 7-day increments</p>
+                <p className="text-[11px] text-paper-600">Calculated average from mood metadata across 7-day increments</p>
               </div>
             </div>
 
@@ -363,13 +364,13 @@ export default function InsightsDashboard({ entries }: InsightsDashboardProps) {
                 <AreaChart data={trendData} margin={{ top: 10, right: 10, left: -25, bottom: 0 }}>
                   <defs>
                     <linearGradient id="moodGradient" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.3}/>
-                      <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0}/>
+                      <stop offset="5%" stopColor="#d4814c" stopOpacity={0.3}/>
+                      <stop offset="95%" stopColor="#d4814c" stopOpacity={0}/>
                     </linearGradient>
                   </defs>
                   <XAxis 
                     dataKey="week" 
-                    stroke="#444" 
+                    stroke="#322b26" 
                     fontSize={10} 
                     fontWeight="bold"
                     tickLine={false} 
@@ -377,7 +378,7 @@ export default function InsightsDashboard({ entries }: InsightsDashboardProps) {
                   <YAxis 
                     domain={[1, 5]} 
                     ticks={[1, 2, 3, 4, 5]} 
-                    stroke="#444" 
+                    stroke="#322b26" 
                     fontSize={10} 
                     fontWeight="bold"
                     tickLine={false} 
@@ -395,7 +396,7 @@ export default function InsightsDashboard({ entries }: InsightsDashboardProps) {
                   <Area 
                     type="monotone" 
                     dataKey="Mood Index" 
-                    stroke="#8b5cf6" 
+                    stroke="#d4814c" 
                     strokeWidth={2.5} 
                     fillOpacity={1} 
                     fill="url(#moodGradient)" 
@@ -406,21 +407,21 @@ export default function InsightsDashboard({ entries }: InsightsDashboardProps) {
           </div>
 
           {/* Categories Bar Distribution */}
-          <div className="lg:col-span-4 bg-[#0c0c0c]/80 border border-[#222] rounded-2xl p-5 space-y-4 flex flex-col justify-between min-h-[350px]">
+          <div className="lg:col-span-4 bg-ink-900/80 border border-ink-800 rounded-2xl p-5 space-y-4 flex flex-col justify-between min-h-[350px]">
             <div className="text-left space-y-1">
-              <h3 className="text-sm font-bold text-white flex items-center space-x-1.5">
-                <BarChart2 className="w-4 h-4 text-[#d946ef]" />
+              <h3 className="text-sm font-bold text-paper-50 flex items-center space-x-1.5">
+                <BarChart2 className="w-4 h-4 text-ember-400" />
                 <span>Focus Distribution</span>
               </h3>
-              <p className="text-[11px] text-[#666]">Occurrence counts across categorized journal focus labels</p>
+              <p className="text-[11px] text-paper-600">Occurrence counts across categorized journal focus labels</p>
             </div>
 
             <div className="flex-1 w-full min-h-[200px] flex items-center justify-center">
               {categoryData.length > 0 ? (
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={categoryData} layout="vertical" margin={{ top: 10, right: 10, left: -20, bottom: 5 }}>
-                    <XAxis type="number" stroke="#444" fontSize={10} hide />
-                    <YAxis dataKey="name" type="category" stroke="#888" fontSize={10} fontWeight="bold" tickLine={false} width={80} />
+                    <XAxis type="number" stroke="#322b26" fontSize={10} hide />
+                    <YAxis dataKey="name" type="category" stroke="#8c8378" fontSize={10} fontWeight="bold" tickLine={false} width={80} />
                     <Tooltip 
                       contentStyle={{ 
                         backgroundColor: '#121212', 
@@ -430,7 +431,7 @@ export default function InsightsDashboard({ entries }: InsightsDashboardProps) {
                         fontSize: '11px'
                       }} 
                     />
-                    <Bar dataKey="value" fill="#8b5cf6" radius={[0, 6, 6, 0]}>
+                    <Bar dataKey="value" fill="#d4814c" radius={[0, 6, 6, 0]}>
                       {categoryData.map((entry, index) => (
                         <Cell key={`cell-${index}`} fill={accentColors[index % accentColors.length]} />
                       ))}
@@ -439,21 +440,21 @@ export default function InsightsDashboard({ entries }: InsightsDashboardProps) {
                 </ResponsiveContainer>
               ) : (
                 <div className="text-center py-8">
-                  <PieChart className="w-8 h-8 text-[#222] mx-auto mb-2" />
-                  <p className="text-xs text-[#555] font-semibold">No structured categories logged yet</p>
+                  <PieChart className="w-8 h-8 text-ink-800 mx-auto mb-2" />
+                  <p className="text-xs text-paper-700 font-semibold">No structured categories logged yet</p>
                 </div>
               )}
             </div>
           </div>
         </div>
       ) : (
-        <div className="bg-[#0c0c0c]/80 border border-[#222] rounded-2xl p-12 text-center max-w-lg mx-auto space-y-5" id="insights-empty-dashboard">
-          <div className="w-12 h-12 bg-[#1a1a1a] rounded-2xl flex items-center justify-center mx-auto text-[#8b5cf6] border border-[#2a2a2a]">
+        <div className="bg-ink-900/80 border border-ink-800 rounded-2xl p-12 text-center max-w-lg mx-auto space-y-5" id="insights-empty-dashboard">
+          <div className="w-12 h-12 bg-ink-850 rounded-2xl flex items-center justify-center mx-auto text-ember-500 border border-ink-700">
             <BrainCircuit className="w-6 h-6 animate-pulse" />
           </div>
           <div className="space-y-1">
-            <h3 className="text-sm font-bold text-white">Analysis Workspace Offline</h3>
-            <p className="text-xs text-[#666] leading-relaxed">
+            <h3 className="text-sm font-bold text-paper-50">Analysis Workspace Offline</h3>
+            <p className="text-xs text-paper-600 leading-relaxed">
               We require at least one active saved reflection to trace trend patterns. Begin writing inside the workspace to auto-catalog tags!
             </p>
           </div>

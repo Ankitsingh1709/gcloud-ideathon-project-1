@@ -1,1 +1,181 @@
 @import "tailwindcss";
+
+/*
+  Reflect.ai — "ink on warm paper, in the dark".
+
+  Two rules hold this together:
+  1. Surfaces are warm charcoal, never neutral black. A journal should feel
+     like lamplight on paper, not like a terminal.
+  2. Saturated colour is reserved almost entirely for MOOD. The interface
+     itself is neutral, so the only real colour on screen is the colour of
+     how the writer felt. One ember accent carries interaction; everything
+     else earns hierarchy through weight and warmth.
+*/
+@theme {
+  /* Surfaces — warm charcoal, ascending */
+  --color-ink-950: #0b0a09;
+  --color-ink-900: #131110;
+  --color-ink-850: #1a1715;
+  --color-ink-800: #241f1b;
+  --color-ink-700: #322b26;
+  --color-ink-600: #453c35;
+
+  /* Text — warm paper, descending */
+  /* Every tier below clears WCAG AA (4.5:1) on ink-950 for normal text.
+     The first pass of this scale bottomed out at 2.35:1, which put most of
+     the interface's secondary copy below the legibility floor. */
+  --color-paper-50:  #faf7f2;  /* 18.5:1 */
+  --color-paper-200: #e8e2d9;  /* 15.4:1 */
+  --color-paper-400: #ccc3ba;  /* 11.0:1 — keeps a visible step above paper-500 */
+  --color-paper-500: #b2a89f;  /* 7.0:1 on the lightest surface */
+  --color-paper-600: #a2958b;  /* 5.6:1 on the lightest surface */
+  --color-paper-700: #948679;  /* 4.6:1 on the lightest surface */
+
+  /* The single interaction accent. Warm, deliberately under 70% saturation. */
+  --color-ember-300: #f0b892;
+  --color-ember-400: #e39b6b;
+  --color-ember-500: #d4814c;
+  --color-ember-600: #b4663a;
+  --color-ember-900: #47291a;
+  --color-ember-950: #241511;
+
+  --font-sans: "Instrument Sans", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-serif: "Newsreader", ui-serif, Georgia, Cambria, "Times New Roman", serif;
+
+  /* Shadows carry the background's hue rather than generic black. */
+  --shadow-sink: 0 1px 2px rgb(11 10 9 / 0.6), 0 8px 24px -12px rgb(11 10 9 / 0.8);
+  --shadow-lift: 0 2px 4px rgb(11 10 9 / 0.5), 0 16px 40px -16px rgb(11 10 9 / 0.9);
+
+  /* Built-in CSS easings are too weak for UI. These are the sanctioned curves. */
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+}
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  body {
+    background-color: var(--color-ink-950);
+    color: var(--color-paper-200);
+    font-family: var(--font-sans);
+  }
+
+  /* Large type reads better tightened; small type reads better opened up. */
+  h1, h2, h3 {
+    letter-spacing: -0.021em;
+    text-wrap: balance;
+  }
+
+  p {
+    text-wrap: pretty;
+  }
+
+  /* Data should never wobble as digits change. */
+  .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Journal prose. A serif signals writing rather than chat. */
+  .prose-journal {
+    font-family: var(--font-serif);
+    font-optical-sizing: auto;
+    line-height: 1.65;
+    letter-spacing: 0.003em;
+  }
+
+  ::selection {
+    background-color: var(--color-ember-900);
+    color: var(--color-paper-50);
+  }
+
+  /* One visible focus ring for keyboard users, everywhere. */
+  :focus-visible {
+    outline: 2px solid var(--color-ember-500);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+
+  /* Warm, thin scrollbars that belong to the surface. */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-ink-700) transparent;
+  }
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb {
+    background-color: var(--color-ink-700);
+    border-radius: 999px;
+    border: 3px solid transparent;
+    background-clip: content-box;
+  }
+  ::-webkit-scrollbar-thumb:hover { background-color: var(--color-ink-600); }
+}
+
+@layer utilities {
+  /*
+    Fixed grain overlay. Flat dark UI reads as sterile; a little noise gives
+    the surface a physical quality. Pointer-events none so it never
+    intercepts a click.
+  */
+  .grain::after {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    pointer-events: none;
+    opacity: 0.035;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.82' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+
+  /* Press feedback: a physical click, not a colour change. */
+  .press {
+    transition-property: transform, background-color, border-color, color, box-shadow;
+    transition-duration: 160ms;
+    transition-timing-function: var(--ease-out);
+  }
+  .press:active:not(:disabled) {
+    transform: scale(0.975);
+  }
+
+  /* Entrances. Transform + opacity only, so they stay on the GPU and keep
+     running off the main thread while Firestore and the token stream work. */
+  @keyframes rise {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: none; }
+  }
+  @keyframes settle {
+    from { opacity: 0; transform: translateY(4px); }
+    to   { opacity: 1; transform: none; }
+  }
+  @keyframes fade-only {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+  }
+
+  /* Rare / first-time moments: sign-in, a letter that took seconds to write. */
+  .animate-rise   { animation: rise 420ms var(--ease-out) both; }
+  /* Frequent moments: switching a view. Deliberately near-imperceptible. */
+  .animate-settle { animation: settle 180ms var(--ease-out) both; }
+}
+
+/* Honour the system setting. Motion is decoration; legibility is not. */
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+
+  /* Reduced motion means fewer and gentler, not none. Fades survive because
+     they still explain that content changed; movement is what goes. */
+  .animate-rise,
+  .animate-settle {
+    animation: fade-only 200ms var(--ease-out) both !important;
+  }
+  .press:active:not(:disabled) { transform: none; }
+
+  *, *::before, *::after {
+    animation-iteration-count: 1 !important;
+    transition-duration: 120ms !important;
+  }
+}

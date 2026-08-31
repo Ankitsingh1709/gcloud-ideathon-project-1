@@ -160,10 +160,10 @@ export default function MapPicker({ location, onChange }: MapPickerProps) {
   };
 
   return (
-    <div className="bg-[#121212] border border-[#2a2a2a] rounded-2xl p-5 space-y-4 text-left" id="map-picker-container">
-      <div className="flex items-center justify-between border-b border-[#222] pb-3">
-        <div className="flex items-center space-x-2 text-white">
-          <MapPin className="w-4.5 h-4.5 text-[#8b5cf6]" />
+    <div className="bg-ink-900 border border-ink-700 rounded-2xl p-5 space-y-4 text-left" id="map-picker-container">
+      <div className="flex items-center justify-between border-b border-ink-800 pb-3">
+        <div className="flex items-center space-x-2 text-paper-50">
+          <MapPin className="w-4.5 h-4.5 text-ember-500" />
           <span className="text-xs font-bold uppercase tracking-wider">Location Metadata</span>
         </div>
         {location && (
@@ -178,7 +178,7 @@ export default function MapPicker({ location, onChange }: MapPickerProps) {
       </div>
 
       {/* Interactive Google Map Frame */}
-      <div className="relative w-full h-[180px] bg-[#0c0c0c] rounded-xl overflow-hidden border border-[#222]" id="google-map-frame-wrapper">
+      <div className="relative w-full h-[180px] bg-ink-900 rounded-xl overflow-hidden border border-ink-800" id="google-map-frame-wrapper">
         {mapsApiKey && !mapsRejected ? (
           <APIProvider apiKey={mapsApiKey}>
             <Map
@@ -198,13 +198,13 @@ export default function MapPicker({ location, onChange }: MapPickerProps) {
             </Map>
           </APIProvider>
         ) : (
-          <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center space-y-2 bg-gradient-to-br from-[#0c0c0c] to-[#121212]">
-            <MapPin className="w-8 h-8 text-[#333] shrink-0" />
+          <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center space-y-2 bg-gradient-to-br from-ink-900 to-ink-900">
+            <MapPin className="w-8 h-8 text-ink-700 shrink-0" />
             <div className="space-y-0.5">
-              <span className="text-[11px] font-bold text-[#888] block">
+              <span className="text-[11px] font-bold text-paper-500 block">
                 {mapsRejected ? 'Interactive Map Unavailable' : 'Interactive Map Standby'}
               </span>
-              <p className="text-[9px] text-[#555] leading-relaxed max-w-xs">
+              <p className="text-[9px] text-paper-700 leading-relaxed max-w-xs">
                 {mapsRejected
                   ? <>Google Maps rejected this key. Check that the Maps JavaScript API is enabled, that billing is active on the project, and that the key's referrer restrictions allow this domain. Manual entry below is fully operational.</>
                   : <>To activate interactive clicking, add your restricted key to <strong>VITE_GOOGLE_MAPS_API_KEY</strong>. Manual entry below is fully operational.</>}
@@ -220,7 +220,7 @@ export default function MapPicker({ location, onChange }: MapPickerProps) {
         onClick={useMyCurrentLocation}
         disabled={locating}
         id="use-my-location-btn"
-        className="w-full flex items-center justify-center space-x-1.5 bg-[#1e1b26] hover:bg-[#251f33] disabled:opacity-50 text-[#c4b5fd] border border-[#4c1d95]/40 font-bold text-[10px] py-2 rounded-xl transition cursor-pointer"
+        className="w-full flex items-center justify-center space-x-1.5 bg-ember-950 hover:bg-ink-800 disabled:opacity-50 text-ember-300 border border-ember-900/40 font-bold text-[10px] py-2 rounded-xl transition cursor-pointer"
       >
         {locating
           ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -229,7 +229,7 @@ export default function MapPicker({ location, onChange }: MapPickerProps) {
       </button>
 
       {accuracyMeters !== null && !locateError && (
-        <p className="text-[9px] text-[#555] text-center -mt-1">
+        <p className="text-[9px] text-paper-700 text-center -mt-1">
           Accurate to about {accuracyMeters} m
         </p>
       )}
@@ -244,7 +244,7 @@ export default function MapPicker({ location, onChange }: MapPickerProps) {
       {/* Coordinates Form Entry */}
       <div className="grid grid-cols-2 gap-3" id="map-picker-coordinates-form">
         <div className="space-y-1">
-          <label className="text-[10px] font-bold text-[#666] uppercase tracking-wider block">Latitude</label>
+          <label className="text-[10px] font-bold text-paper-600 uppercase tracking-wider block">Latitude</label>
           <input
             type="text"
             value={latInput}
@@ -253,11 +253,11 @@ export default function MapPicker({ location, onChange }: MapPickerProps) {
               setValidationError(null);
             }}
             placeholder="e.g. 37.7749"
-            className="w-full bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg px-2.5 py-1.5 text-xs text-white placeholder-[#444] focus:outline-none focus:border-[#8b5cf6]"
+            className="w-full bg-ink-850 border border-ink-700 rounded-lg px-2.5 py-1.5 text-xs text-paper-50 placeholder-ink-600 focus:outline-none focus:border-ember-500"
           />
         </div>
         <div className="space-y-1">
-          <label className="text-[10px] font-bold text-[#666] uppercase tracking-wider block">Longitude</label>
+          <label className="text-[10px] font-bold text-paper-600 uppercase tracking-wider block">Longitude</label>
           <input
             type="text"
             value={lngInput}
@@ -266,13 +266,13 @@ export default function MapPicker({ location, onChange }: MapPickerProps) {
               setValidationError(null);
             }}
             placeholder="e.g. -122.4194"
-            className="w-full bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg px-2.5 py-1.5 text-xs text-white placeholder-[#444] focus:outline-none focus:border-[#8b5cf6]"
+            className="w-full bg-ink-850 border border-ink-700 rounded-lg px-2.5 py-1.5 text-xs text-paper-50 placeholder-ink-600 focus:outline-none focus:border-ember-500"
           />
         </div>
       </div>
 
       <div className="space-y-1">
-        <label className="text-[10px] font-bold text-[#666] uppercase tracking-wider block">Place Name</label>
+        <label className="text-[10px] font-bold text-paper-600 uppercase tracking-wider block">Place Name</label>
         <input
           type="text"
           value={placeInput}
@@ -281,7 +281,7 @@ export default function MapPicker({ location, onChange }: MapPickerProps) {
             setValidationError(null);
           }}
           placeholder="e.g. Golden Gate Park"
-          className="w-full bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg px-2.5 py-1.5 text-xs text-white placeholder-[#444] focus:outline-none focus:border-[#8b5cf6]"
+          className="w-full bg-ink-850 border border-ink-700 rounded-lg px-2.5 py-1.5 text-xs text-paper-50 placeholder-ink-600 focus:outline-none focus:border-ember-500"
         />
       </div>
 
@@ -297,9 +297,9 @@ export default function MapPicker({ location, onChange }: MapPickerProps) {
       <button
         type="button"
         onClick={handleManualSave}
-        className="w-full flex items-center justify-center space-x-1 bg-[#1a1a1a] hover:bg-[#222] text-[#ccc] border border-[#333] font-bold text-[10px] py-2 rounded-xl transition cursor-pointer"
+        className="w-full flex items-center justify-center space-x-1 bg-ink-850 hover:bg-ink-800 text-paper-400 border border-ink-700 font-bold text-[10px] py-2 rounded-xl transition cursor-pointer"
       >
-        <Check className="w-3.5 h-3.5 text-[#10b981]" />
+        <Check className="w-3.5 h-3.5 text-emerald-400" />
         <span>Save Location Coordinates</span>
       </button>
     </div>

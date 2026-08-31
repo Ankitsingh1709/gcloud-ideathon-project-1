@@ -170,14 +170,14 @@ export default function App() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#0a0a0a] flex flex-col items-center justify-center p-6 text-center" id="global-loading">
+      <div className="min-h-screen bg-ink-950 flex flex-col items-center justify-center p-6 text-center" id="global-loading">
         <div className="space-y-4 max-w-sm">
-          <div className="bg-[#1e1b26] border border-[#4c1d95]/30 p-4 rounded-3xl text-[#8b5cf6] inline-block shadow-lg">
-            <BookOpen className="w-8 h-8 animate-pulse text-[#8b5cf6]" />
+          <div className="bg-ember-950 border border-ember-900/30 p-4 rounded-3xl text-ember-500 inline-block shadow-lg">
+            <BookOpen className="w-8 h-8 animate-pulse text-ember-500" />
           </div>
-          <div className="flex items-center justify-center space-x-2 text-[#ccc] font-semibold text-sm">
-            <RefreshCw className="w-4 h-4 animate-spin text-[#8b5cf6]" />
-            <span>Securing connection...</span>
+          <div className="flex items-center justify-center space-x-2 text-paper-500 text-sm">
+            <RefreshCw className="w-4 h-4 animate-spin text-ember-500" aria-hidden="true" />
+            <span>Opening your journal…</span>
           </div>
         </div>
       </div>
@@ -196,7 +196,7 @@ export default function App() {
   const activeEntry = getActiveEntry();
 
   return (
-    <div className="h-screen bg-[#0a0a0a] flex flex-col overflow-hidden" id="app-root-workspace">
+    <div className="h-screen bg-ink-950 flex flex-col overflow-hidden" id="app-root-workspace">
       {/* Global Error Banner */}
       {globalError && (
         <div className="bg-rose-950/40 border-b border-rose-900/50 text-rose-300 text-xs px-6 py-2.5 flex items-center justify-between font-semibold">
@@ -206,7 +206,7 @@ export default function App() {
           </div>
           <button 
             onClick={() => setGlobalError(null)}
-            className="text-[#666] hover:text-[#ccc] font-bold"
+            className="text-paper-600 hover:text-paper-400 font-bold"
           >
             ✕
           </button>
@@ -236,6 +236,7 @@ export default function App() {
           onViewChange={setCurrentView}
         />
 
+        <div key={currentView} className="flex-1 flex min-w-0 animate-settle">
         {currentView === 'admin' && user?.role === 'admin' ? (
           <AdminDashboard />
         ) : currentView === 'insights' ? (
@@ -252,6 +253,7 @@ export default function App() {
             }}
           />
         )}
+        </div>
       </div>
     </div>
   );

@@ -202,21 +202,21 @@ export default function MainDashboard({
 
   if (!entry) {
     return (
-      <div className="flex-1 bg-[#0a0a0a] flex flex-col items-center justify-center p-8 text-center" id="empty-state-workspace">
-        <div className="w-full max-w-md bg-[#121212] rounded-3xl p-8 border border-[#2a2a2a] shadow-2xl space-y-6">
-          <div className="bg-[#1e1b26] border border-[#4c1d95]/30 p-4 rounded-3xl text-[#8b5cf6] inline-block">
+      <div className="flex-1 bg-ink-950 flex flex-col items-center justify-center p-8 text-center" id="empty-state-workspace">
+        <div className="w-full max-w-md bg-ink-900 rounded-3xl p-8 border border-ink-700 shadow-2xl space-y-6">
+          <div className="bg-ember-950 border border-ember-900/30 p-4 rounded-3xl text-ember-500 inline-block">
             <Feather className="w-8 h-8" />
           </div>
           <div className="space-y-2">
-            <h2 className="text-xl font-bold text-white">Your Reflection Workspace</h2>
-            <p className="text-[#888] text-sm leading-relaxed">
+            <h2 className="text-xl font-bold text-paper-50">Your Reflection Workspace</h2>
+            <p className="text-paper-500 text-sm leading-relaxed">
               Begin a fresh, private reflection space or select an entry from your journal history to continue exploring your awareness.
             </p>
           </div>
           <button
             onClick={onNewEntry}
             id="empty-state-new-entry-btn"
-            className="w-full bg-[#8b5cf6] hover:bg-[#7c3aed] text-white font-semibold py-3 rounded-xl transition duration-150 shadow-lg hover:shadow-[#8b5cf6]/20 cursor-pointer"
+            className="w-full bg-ember-500 hover:bg-ember-600 text-paper-50 font-semibold py-3 rounded-xl transition duration-150 shadow-lg hover:shadow-ember-500/20 cursor-pointer"
           >
             Create New Reflection
           </button>
@@ -439,19 +439,19 @@ export default function MainDashboard({
       case 'grateful': return 'bg-amber-950/40 text-amber-300 border-amber-900/40';
       case 'anxious': return 'bg-rose-950/40 text-rose-300 border-rose-900/40';
       case 'excited': return 'bg-sky-950/40 text-sky-300 border-sky-900/40';
-      case 'reflective': return 'bg-[#1e1b26] text-[#8b5cf6] border-[#4c1d95]/30';
+      case 'reflective': return 'bg-ember-950 text-ember-500 border-ember-900/30';
       case 'melancholy': return 'bg-violet-950/40 text-violet-300 border-violet-900/40';
       case 'motivated': return 'bg-emerald-950/40 text-emerald-300 border-emerald-900/40';
-      default: return 'bg-[#1e1e1e] text-[#ccc] border-[#333]';
+      default: return 'bg-ink-850 text-paper-400 border-ink-700';
     }
   };
 
   return (
-    <div className="flex-1 bg-[#0a0a0a] flex flex-col h-full overflow-hidden" id="workspace-container">
+    <div className="flex-1 bg-ink-950 flex flex-col h-full overflow-hidden" id="workspace-container">
       {/* Workspace Header */}
-      <header className="px-6 py-4 border-b border-[#2a2a2a] bg-[#0c0c0c]/80 backdrop-blur-md flex items-center justify-between sticky top-0 z-10">
+      <header className="px-6 py-4 border-b border-ink-700 bg-ink-900/80 backdrop-blur-md flex items-center justify-between sticky top-0 z-10">
         <div className="flex items-center space-x-3 overflow-hidden">
-          <div className="bg-[#1e1b26] border border-[#4c1d95]/30 p-2 rounded-xl text-[#8b5cf6] shrink-0">
+          <div className="bg-ember-950 border border-ember-900/30 p-2 rounded-xl text-ember-500 shrink-0">
             <Feather className="w-5 h-5" />
           </div>
           <div className="overflow-hidden flex flex-col justify-center">
@@ -481,15 +481,15 @@ export default function MainDashboard({
                 }
               }}
               placeholder="Title your reflection..."
-              className="bg-transparent border-b border-transparent hover:border-[#333] focus:border-[#8b5cf6] text-base font-bold text-white focus:outline-none py-0.5 rounded transition max-w-xs md:max-w-md"
+              className="bg-transparent border-b border-transparent hover:border-ink-700 focus:border-ember-500 text-base font-bold text-paper-50 focus:outline-none py-0.5 rounded transition max-w-xs md:max-w-md"
               id="title-input-header"
             />
             <div className="flex items-center space-x-2 mt-0.5">
-              <span className="text-[#666] text-xs font-semibold">
+              <span className="text-paper-600 text-xs font-semibold">
                 Created {new Date(entry.createdAt).toLocaleDateString('en-US', { hour: 'numeric', minute: '2-digit' })}
               </span>
               {entry.isDraft && (
-                <span className="text-[10px] uppercase font-bold tracking-wider bg-[#1a1a1a] border border-[#2a2a2a] text-[#888] px-1.5 py-0.5 rounded-full">
+                <span className="text-[10px] uppercase font-bold tracking-wider bg-ink-850 border border-ink-700 text-paper-500 px-1.5 py-0.5 rounded-full">
                   Draft
                 </span>
               )}
@@ -500,14 +500,14 @@ export default function MainDashboard({
         {/* Sync / State Alerts */}
         <div className="flex items-center space-x-3 shrink-0">
           {saveStatus === 'saving' && (
-            <div className="flex items-center space-x-1.5 text-xs text-[#ccc] bg-[#1e1e1e] border border-[#333] px-3 py-1.5 rounded-full animate-pulse font-semibold">
-              <RefreshCw className="w-3.5 h-3.5 animate-spin text-[#8b5cf6]" />
+            <div className="flex items-center space-x-1.5 text-xs text-paper-400 bg-ink-850 border border-ink-700 px-3 py-1.5 rounded-full animate-pulse font-semibold">
+              <RefreshCw className="w-3.5 h-3.5 animate-spin text-ember-500" />
               <span>Saving...</span>
             </div>
           )}
           {saveStatus === 'saved' && (
-            <div className="flex items-center space-x-1.5 text-xs text-[#8b5cf6] bg-[#1e1b26] border border-[#4c1d95]/30 px-3 py-1.5 rounded-full font-semibold">
-              <CheckCircle className="w-3.5 h-3.5 text-[#d946ef]" />
+            <div className="flex items-center space-x-1.5 text-xs text-ember-500 bg-ember-950 border border-ember-900/30 px-3 py-1.5 rounded-full font-semibold">
+              <CheckCircle className="w-3.5 h-3.5 text-ember-400" />
               <span>Saved</span>
             </div>
           )}
@@ -526,7 +526,7 @@ export default function MainDashboard({
             onClick={handleManualSave}
             disabled={saveStatus === 'saving'}
             id="workspace-manual-save-btn"
-            className="flex items-center space-x-1.5 bg-[#8b5cf6] hover:bg-[#7c3aed] text-white font-semibold text-xs px-3.5 py-2 rounded-xl transition disabled:opacity-50 cursor-pointer"
+            className="flex items-center space-x-1.5 bg-ember-500 hover:bg-ember-600 text-paper-50 font-semibold text-xs px-3.5 py-2 rounded-xl transition disabled:opacity-50 cursor-pointer"
           >
             <Save className="w-3.5 h-3.5" />
             <span>Save Thread</span>
@@ -537,21 +537,21 @@ export default function MainDashboard({
       {/* Main Workspace Body */}
       <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
         {/* Dynamic AI Insights Pane (Sticky or Top on small screens) */}
-        <div className="w-full md:w-80 border-b md:border-b-0 md:border-r border-[#2a2a2a] bg-[#121212] p-6 flex flex-col justify-between overflow-y-auto shrink-0 space-y-6">
+        <div className="w-full md:w-80 border-b md:border-b-0 md:border-r border-ink-700 bg-ink-900 p-6 flex flex-col justify-between overflow-y-auto shrink-0 space-y-6">
           <div className="space-y-6">
             <div>
-              <div className="flex items-center space-x-2 text-white font-bold text-sm mb-3">
-                <BrainCircuit className="w-4.5 h-4.5 text-[#8b5cf6]" />
+              <div className="flex items-center space-x-2 text-paper-50 font-bold text-sm mb-3">
+                <BrainCircuit className="w-4.5 h-4.5 text-ember-500" />
                 <span>AI Reflection Insights</span>
               </div>
-              <p className="text-xs text-[#888] leading-relaxed">
+              <p className="text-xs text-paper-500 leading-relaxed">
                 Reflect freely in the thread. Once you finish conversing, click the button below to have Gemini synthesize dynamic tags, summaries, and category fields.
               </p>
             </div>
 
             {/* Title Insight */}
-            <div className="space-y-1.5 bg-[#1a1a1a] p-4 rounded-2xl border border-[#333]">
-              <span className="text-[10px] font-bold text-[#666] uppercase tracking-wider block">Generated Title</span>
+            <div className="space-y-1.5 bg-ink-850 p-4 rounded-2xl border border-ink-700">
+              <span className="text-[10px] font-bold text-paper-600 uppercase tracking-wider block">Generated Title</span>
               <input
                 type="text"
                 value={localTitle}
@@ -578,47 +578,47 @@ export default function MainDashboard({
                   }
                 }}
                 placeholder="Untitled Space"
-                className="w-full bg-transparent border-b border-transparent hover:border-[#333] focus:border-[#8b5cf6] font-semibold text-white text-sm focus:outline-none py-0.5 rounded transition"
+                className="w-full bg-transparent border-b border-transparent hover:border-ink-700 focus:border-ember-500 font-semibold text-paper-50 text-sm focus:outline-none py-0.5 rounded transition"
                 id="title-input-insights"
               />
             </div>
 
             {/* Mood & Category Insight */}
             <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1 bg-[#1a1a1a] p-3 rounded-xl border border-[#333]">
-                <span className="text-[10px] font-bold text-[#666] uppercase tracking-wider block">Category</span>
+              <div className="space-y-1 bg-ink-850 p-3 rounded-xl border border-ink-700">
+                <span className="text-[10px] font-bold text-paper-600 uppercase tracking-wider block">Category</span>
                 {entry.category ? (
-                  <span className="inline-flex items-center text-xs font-semibold text-[#ccc] mt-1">
-                    <Hash className="w-3.5 h-3.5 mr-0.5 text-[#666]" />
+                  <span className="inline-flex items-center text-xs font-semibold text-paper-400 mt-1">
+                    <Hash className="w-3.5 h-3.5 mr-0.5 text-paper-600" />
                     {entry.category}
                   </span>
                 ) : (
-                  <span className="text-xs text-[#555] mt-1 block font-medium">None yet</span>
+                  <span className="text-xs text-paper-700 mt-1 block font-medium">None yet</span>
                 )}
               </div>
 
-              <div className="space-y-1 bg-[#1a1a1a] p-3 rounded-xl border border-[#333]">
-                <span className="text-[10px] font-bold text-[#666] uppercase tracking-wider block">Detected Mood</span>
+              <div className="space-y-1 bg-ink-850 p-3 rounded-xl border border-ink-700">
+                <span className="text-[10px] font-bold text-paper-600 uppercase tracking-wider block">Detected Mood</span>
                 {entry.mood ? (
                   <span className={`inline-flex items-center text-xs font-bold border px-2 py-0.5 rounded-full mt-1 ${getMoodBadgeColor(entry.mood)}`}>
                     <Smile className="w-3.5 h-3.5 mr-0.5 opacity-85" />
                     {entry.mood}
                   </span>
                 ) : (
-                  <span className="text-xs text-[#555] mt-1 block font-medium">None yet</span>
+                  <span className="text-xs text-paper-700 mt-1 block font-medium">None yet</span>
                 )}
               </div>
             </div>
 
             {/* AI Summary Card */}
             <div className="space-y-2">
-              <span className="text-[10px] font-bold text-[#666] uppercase tracking-wider block">AI Conversation Summary</span>
+              <span className="text-[10px] font-bold text-paper-600 uppercase tracking-wider block">AI Conversation Summary</span>
               {entry.summary ? (
-                <div className="bg-[#1a1a1a] border border-[#333] rounded-2xl p-4 text-xs text-[#ccc] leading-relaxed shadow-sm">
+                <div className="bg-ink-850 border border-ink-700 rounded-2xl p-4 text-xs text-paper-400 leading-relaxed shadow-sm">
                   {entry.summary}
                 </div>
               ) : (
-                <div className="bg-transparent border-2 border-dashed border-[#333] rounded-2xl p-5 text-center text-xs text-[#555]">
+                <div className="bg-transparent border-2 border-dashed border-ink-700 rounded-2xl p-5 text-center text-xs text-paper-700">
                   No summary synthesized. Write a reflection and trigger synthesis below.
                 </div>
               )}
@@ -628,12 +628,12 @@ export default function MainDashboard({
             <MapPicker location={entry.location} onChange={handleLocationChange} />
           </div>
 
-          <div className="pt-4 border-t border-[#2a2a2a]">
+          <div className="pt-4 border-t border-ink-700">
             <button
               onClick={handleGenerateSummaryAndMetadata}
               disabled={entry.messages.length === 0 || loadingAnalysis}
               id="synthesize-insights-btn"
-              className="w-full flex items-center justify-center space-x-2 bg-gradient-to-r from-[#8b5cf6] to-[#d946ef] hover:opacity-90 text-white font-bold text-xs px-4 py-3 rounded-xl shadow-md disabled:opacity-40 cursor-pointer transition"
+              className="w-full flex items-center justify-center space-x-2 bg-gradient-to-r from-ember-500 to-ember-400 hover:opacity-90 text-paper-50 font-bold text-xs px-4 py-3 rounded-xl shadow-md disabled:opacity-40 cursor-pointer transition"
             >
               {loadingAnalysis ? (
                 <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
@@ -648,19 +648,19 @@ export default function MainDashboard({
         </div>
 
         {/* Conversation / Typing Panel */}
-        <div className="flex-1 flex flex-col justify-between bg-[#0a0a0a] overflow-hidden h-full">
+        <div className="flex-1 flex flex-col justify-between bg-ink-950 overflow-hidden h-full">
           {/* "On This Day" Panel */}
-          <div className="border-b border-[#2a2a2a] bg-[#0c0c0c]/90 px-6 py-3.5 flex flex-col space-y-3 shrink-0" id="on-this-day-dashboard-panel">
+          <div className="border-b border-ink-700 bg-ink-900/90 px-6 py-3.5 flex flex-col space-y-3 shrink-0" id="on-this-day-dashboard-panel">
             <button 
               type="button"
               onClick={() => setIsOnThisDayExpanded(!isOnThisDayExpanded)}
-              className="flex items-center justify-between w-full text-left font-bold text-xs uppercase tracking-wider text-[#888] hover:text-[#ccc] transition cursor-pointer"
+              className="flex items-center justify-between w-full text-left font-bold text-xs uppercase tracking-wider text-paper-500 hover:text-paper-400 transition cursor-pointer"
             >
               <div className="flex items-center space-x-2">
-                <Clock className="w-4 h-4 text-[#8b5cf6]" />
+                <Clock className="w-4 h-4 text-ember-500" />
                 <span>On This Day: Revisit Past Reflections ({onThisDayMatches.length})</span>
               </div>
-              {isOnThisDayExpanded ? <ChevronUp className="w-4 h-4 text-[#888]" /> : <ChevronDown className="w-4 h-4 text-[#888]" />}
+              {isOnThisDayExpanded ? <ChevronUp className="w-4 h-4 text-paper-500" /> : <ChevronDown className="w-4 h-4 text-paper-500" />}
             </button>
 
             {isOnThisDayExpanded && (
@@ -670,11 +670,11 @@ export default function MainDashboard({
                     {onThisDayMatches.map((match, index) => (
                       <div 
                         key={index}
-                        className="bg-[#121212] border border-[#222] hover:border-[#333] rounded-2xl p-4.5 space-y-3 transition flex flex-col justify-between"
+                        className="bg-ink-900 border border-ink-800 hover:border-ink-700 rounded-2xl p-4.5 space-y-3 transition flex flex-col justify-between"
                       >
                         <div className="space-y-1.5 text-left">
                           <div className="flex items-center justify-between">
-                            <span className="text-[10px] font-bold text-[#8b5cf6] uppercase tracking-wider bg-[#1e1b26] px-2 py-0.5 rounded-md border border-[#4c1d95]/20">
+                            <span className="text-[10px] font-bold text-ember-500 uppercase tracking-wider bg-ember-950 px-2 py-0.5 rounded-md border border-ember-900/20">
                               {match.label}
                             </span>
                             {match.entry.mood && (
@@ -683,30 +683,30 @@ export default function MainDashboard({
                               </span>
                             )}
                           </div>
-                          <h4 className="text-xs font-bold text-white line-clamp-1">
+                          <h4 className="text-xs font-bold text-paper-50 line-clamp-1">
                             {match.entry.title || 'Untitled Space'}
                           </h4>
-                          <p className="text-[11px] text-[#888] line-clamp-2 leading-relaxed">
+                          <p className="text-[11px] text-paper-500 line-clamp-2 leading-relaxed">
                             {match.entry.summary || (match.entry.messages[0] ? match.entry.messages[0].content : 'No text content available.')}
                           </p>
                         </div>
 
-                        <div className="pt-2 flex items-center space-x-2 border-t border-[#1a1a1a]">
+                        <div className="pt-2 flex items-center space-x-2 border-t border-ink-850">
                           <button
                             type="button"
                             onClick={() => {
                               if (onSelectEntry) onSelectEntry(match.entry.id);
                             }}
-                            className="flex-1 text-center bg-[#1a1a1a] hover:bg-[#222] text-[#ccc] border border-[#333] font-semibold text-[10px] py-1.5 rounded-lg transition cursor-pointer"
+                            className="flex-1 text-center bg-ink-850 hover:bg-ink-800 text-paper-400 border border-ink-700 font-semibold text-[10px] py-1.5 rounded-lg transition cursor-pointer"
                           >
                             Read Full
                           </button>
                           <button
                             type="button"
                             onClick={() => handleReflectOnPastEntry(match)}
-                            className="flex-1 text-center bg-[#8b5cf6] hover:bg-[#7c3aed] text-white font-bold text-[10px] py-1.5 rounded-lg transition cursor-pointer inline-flex items-center justify-center space-x-1"
+                            className="flex-1 text-center bg-ember-500 hover:bg-ember-600 text-paper-50 font-bold text-[10px] py-1.5 rounded-lg transition cursor-pointer inline-flex items-center justify-center space-x-1"
                           >
-                            <Sparkles className="w-3 h-3 text-[#d946ef]" />
+                            <Sparkles className="w-3 h-3 text-ember-400" />
                             <span>Reflect</span>
                           </button>
                         </div>
@@ -714,10 +714,10 @@ export default function MainDashboard({
                     ))}
                   </div>
                 ) : (
-                  <div className="bg-[#121212]/50 border border-[#222] rounded-2xl p-5 text-center space-y-4">
+                  <div className="bg-ink-900/50 border border-ink-800 rounded-2xl p-5 text-center space-y-4">
                     <div className="space-y-1 max-w-sm mx-auto text-center">
-                      <p className="text-xs font-semibold text-[#ccc]">No past milestones discovered today</p>
-                      <p className="text-[11px] text-[#666] leading-relaxed">
+                      <p className="text-xs font-semibold text-paper-400">No past milestones discovered today</p>
+                      <p className="text-[11px] text-paper-600 leading-relaxed">
                         Reflect.ai compares your current date against historical entries. Click a button below to instantly seed a test reflection into Firestore to explore the feature!
                       </p>
                     </div>
@@ -726,27 +726,27 @@ export default function MainDashboard({
                         type="button"
                         onClick={() => handleSeedPastEntry(7)}
                         disabled={seedingMilestone !== null}
-                        className="inline-flex items-center space-x-1 bg-[#1a1a1a] hover:bg-[#222] text-[#ccc] border border-[#333] font-bold text-[10px] px-3 py-2 rounded-xl transition cursor-pointer disabled:opacity-40"
+                        className="inline-flex items-center space-x-1 bg-ink-850 hover:bg-ink-800 text-paper-400 border border-ink-700 font-bold text-[10px] px-3 py-2 rounded-xl transition cursor-pointer disabled:opacity-40"
                       >
-                        {seedingMilestone === '1 week ago' ? <RefreshCw className="w-3 h-3 animate-spin text-[#8b5cf6]" /> : <Plus className="w-3 h-3 text-[#8b5cf6]" />}
+                        {seedingMilestone === '1 week ago' ? <RefreshCw className="w-3 h-3 animate-spin text-ember-500" /> : <Plus className="w-3 h-3 text-ember-500" />}
                         <span>Seed 1 Week Ago</span>
                       </button>
                       <button
                         type="button"
                         onClick={() => handleSeedPastEntry(30)}
                         disabled={seedingMilestone !== null}
-                        className="inline-flex items-center space-x-1 bg-[#1a1a1a] hover:bg-[#222] text-[#ccc] border border-[#333] font-bold text-[10px] px-3 py-2 rounded-xl transition cursor-pointer disabled:opacity-40"
+                        className="inline-flex items-center space-x-1 bg-ink-850 hover:bg-ink-800 text-paper-400 border border-ink-700 font-bold text-[10px] px-3 py-2 rounded-xl transition cursor-pointer disabled:opacity-40"
                       >
-                        {seedingMilestone === '1 month ago' ? <RefreshCw className="w-3 h-3 animate-spin text-[#8b5cf6]" /> : <Plus className="w-3 h-3 text-[#8b5cf6]" />}
+                        {seedingMilestone === '1 month ago' ? <RefreshCw className="w-3 h-3 animate-spin text-ember-500" /> : <Plus className="w-3 h-3 text-ember-500" />}
                         <span>Seed 1 Month Ago</span>
                       </button>
                       <button
                         type="button"
                         onClick={() => handleSeedPastEntry(365)}
                         disabled={seedingMilestone !== null}
-                        className="inline-flex items-center space-x-1 bg-[#1a1a1a] hover:bg-[#222] text-[#ccc] border border-[#333] font-bold text-[10px] px-3 py-2 rounded-xl transition cursor-pointer disabled:opacity-40"
+                        className="inline-flex items-center space-x-1 bg-ink-850 hover:bg-ink-800 text-paper-400 border border-ink-700 font-bold text-[10px] px-3 py-2 rounded-xl transition cursor-pointer disabled:opacity-40"
                       >
-                        {seedingMilestone === '1 year ago' ? <RefreshCw className="w-3 h-3 animate-spin text-[#8b5cf6]" /> : <Plus className="w-3 h-3 text-[#8b5cf6]" />}
+                        {seedingMilestone === '1 year ago' ? <RefreshCw className="w-3 h-3 animate-spin text-ember-500" /> : <Plus className="w-3 h-3 text-ember-500" />}
                         <span>Seed 1 Year Ago</span>
                       </button>
                     </div>
@@ -760,11 +760,11 @@ export default function MainDashboard({
           <div className="flex-1 overflow-y-auto p-6 space-y-6" id="messages-container">
             {entry.messages.length === 0 ? (
               <div className="h-full flex flex-col items-center justify-center text-center max-w-md mx-auto space-y-4">
-                <div className="bg-[#121212] p-4 rounded-3xl border border-[#2a2a2a] shadow-lg">
-                  <Feather className="w-6 h-6 text-[#8b5cf6]" />
+                <div className="bg-ink-900 p-4 rounded-3xl border border-ink-700 shadow-lg">
+                  <Feather className="w-6 h-6 text-ember-500" />
                 </div>
-                <h3 className="text-base font-bold text-white">Start Your Reflection Journal</h3>
-                <p className="text-xs text-[#888] leading-relaxed">
+                <h3 className="text-base font-bold text-paper-50">Start Your Reflection Journal</h3>
+                <p className="text-xs text-paper-500 leading-relaxed">
                   Reflect on your day, write about your current feelings, or ask Gemini for guidance. Type your thoughts below and converse securely.
                 </p>
               </div>
@@ -777,16 +777,16 @@ export default function MainDashboard({
                       key={idx}
                       className={`flex ${isUser ? 'justify-end' : 'justify-start'}`}
                     >
-                      <div className={`max-w-xl rounded-2xl px-5 py-3.5 text-sm leading-relaxed shadow-lg ${
-                        isUser 
-                          ? 'bg-[#8b5cf6] text-white rounded-br-none' 
-                          : 'bg-[#121212] text-[#ccc] border border-[#2a2a2a] rounded-bl-none'
+                      <div className={`max-w-xl rounded-2xl px-5 py-4 shadow-sink ${
+                        isUser
+                          ? 'bg-ink-800 text-paper-200 rounded-br-sm border border-ink-700'
+                          : 'bg-ink-900 text-paper-200 border border-ink-800 rounded-bl-sm'
                       }`}>
-                        <div className={`font-semibold text-[10px] opacity-75 uppercase tracking-wider mb-1.5 ${isUser ? 'text-white' : 'text-[#8b5cf6]'}`}>
-                          {isUser ? 'Your Journal Reflection' : 'Gemini Companion'}
+                        <div className={`text-[11px] font-medium mb-2 ${isUser ? 'text-paper-500' : 'text-ember-500'}`}>
+                          {isUser ? 'You wrote' : 'Gemini'}
                         </div>
-                        <p className="whitespace-pre-wrap">{message.content}</p>
-                        <div className="text-[9px] opacity-50 mt-1.5 text-right">
+                        <p className="prose-journal text-[15px] whitespace-pre-wrap">{message.content}</p>
+                        <div className="text-[10px] text-paper-700 mt-2.5 tabular">
                           {new Date(message.timestamp).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
                         </div>
                       </div>
@@ -797,14 +797,14 @@ export default function MainDashboard({
                 {/* Live reply, streaming in token by token */}
                 {streamingText && (
                   <div className="flex justify-start">
-                    <div className="bg-[#121212] border border-[#2a2a2a] rounded-2xl rounded-bl-none px-5 py-4 max-w-2xl shadow-lg">
-                      <div className="font-semibold text-[10px] opacity-75 uppercase tracking-wider mb-1.5 text-[#8b5cf6] flex items-center space-x-1">
-                        <Sparkles className="w-3 h-3 text-[#d946ef]" />
+                    <div className="bg-ink-900 border border-ink-800 rounded-2xl rounded-bl-sm px-5 py-4 max-w-2xl shadow-sink">
+                      <div className="text-[11px] font-medium mb-2 text-ember-500 flex items-center gap-1.5">
+                        <Sparkles className="w-3 h-3 text-ember-400" aria-hidden="true" />
                         <span>Gemini</span>
                       </div>
-                      <p className="text-sm text-[#ddd] whitespace-pre-wrap leading-relaxed">
+                      <p className="prose-journal text-[15px] text-paper-200 whitespace-pre-wrap">
                         {streamingText}
-                        <span className="inline-block w-1.5 h-4 ml-0.5 -mb-0.5 align-middle bg-[#8b5cf6] animate-pulse" />
+                        <span className="inline-block w-1.5 h-4 ml-0.5 -mb-0.5 align-middle bg-ember-500 animate-pulse" />
                       </p>
                     </div>
                   </div>
@@ -813,15 +813,15 @@ export default function MainDashboard({
                 {/* Typing bubble — only until the first token lands */}
                 {loadingReflection && !streamingText && (
                   <div className="flex justify-start">
-                    <div className="bg-[#121212] border border-[#2a2a2a] rounded-2xl rounded-bl-none px-5 py-4 max-w-xs shadow-lg">
-                      <div className="font-semibold text-[10px] opacity-75 uppercase tracking-wider mb-1.5 text-[#8b5cf6] flex items-center space-x-1">
-                        <Sparkles className="w-3 h-3 text-[#d946ef] animate-pulse" />
-                        <span>Gemini is reflecting...</span>
+                    <div className="bg-ink-900 border border-ink-800 rounded-2xl rounded-bl-sm px-5 py-4 max-w-xs shadow-sink">
+                      <div className="text-[11px] font-medium mb-2 text-ember-500 flex items-center gap-1.5">
+                        <Sparkles className="w-3 h-3 text-ember-400" aria-hidden="true" />
+                        <span>Thinking</span>
                       </div>
                       <div className="flex space-x-1.5 py-1">
-                        <div className="w-2 h-2 bg-[#8b5cf6] rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                        <div className="w-2 h-2 bg-[#8b5cf6] rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                        <div className="w-2 h-2 bg-[#8b5cf6] rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                        <div className="w-2 h-2 bg-ember-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                        <div className="w-2 h-2 bg-ember-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                        <div className="w-2 h-2 bg-ember-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
                       </div>
                     </div>
                   </div>
@@ -845,7 +845,7 @@ export default function MainDashboard({
                         onClick={handleRetryReflection}
                         disabled={loadingReflection}
                         id="retry-reflection-bubble-btn"
-                        className="inline-flex items-center space-x-1.5 bg-[#8b5cf6] hover:bg-[#7c3aed] text-white font-bold text-[11px] px-3 py-1.5 rounded-lg transition cursor-pointer"
+                        className="inline-flex items-center space-x-1.5 bg-ember-500 hover:bg-ember-600 text-paper-50 font-bold text-[11px] px-3 py-1.5 rounded-lg transition cursor-pointer"
                       >
                         <RefreshCw className={`w-3 h-3 ${loadingReflection ? 'animate-spin' : ''}`} />
                         <span>Retry Generation</span>
@@ -869,7 +869,7 @@ export default function MainDashboard({
                           setHasReflectionError(false);
                         }}
                         id="restore-reflection-bubble-btn"
-                        className="inline-flex items-center space-x-1 bg-[#1a1a1a] hover:bg-[#222] text-[#ccc] border border-[#333] font-semibold text-[11px] px-3 py-1.5 rounded-lg transition cursor-pointer"
+                        className="inline-flex items-center space-x-1 bg-ink-850 hover:bg-ink-800 text-paper-400 border border-ink-700 font-semibold text-[11px] px-3 py-1.5 rounded-lg transition cursor-pointer"
                       >
                         <span>Edit & Re-type</span>
                       </button>
@@ -883,15 +883,15 @@ export default function MainDashboard({
           </div>
 
           {/* Prompt Entry Box */}
-          <div className="p-4 border-t border-[#2a2a2a] bg-[#0c0c0c]">
+          <div className="p-4 border-t border-ink-700 bg-ink-900">
             <form onSubmit={handleSendMessage} className="max-w-3xl mx-auto flex items-end space-x-3">
-              <div className="flex-1 bg-[#121212] border border-[#2a2a2a] rounded-2xl px-4 py-2.5 flex items-end">
+              <div className="flex-1 bg-ink-900 border border-ink-700 rounded-2xl px-4 py-2.5 flex items-end">
                 <textarea
                   value={inputText}
                   onChange={(e) => setInputText(e.target.value)}
                   placeholder="Express your thoughts or converse with Gemini..."
                   rows={2}
-                  className="flex-1 bg-transparent border-none resize-none focus:outline-none text-sm placeholder-[#555] text-[#ccc]"
+                  className="flex-1 bg-transparent border-none resize-none focus:outline-none text-sm placeholder-paper-700 text-paper-400"
                   onKeyDown={(e) => {
                     if (e.key === 'Enter' && !e.shiftKey) {
                       e.preventDefault();
@@ -911,7 +911,7 @@ export default function MainDashboard({
                   className={`p-3.5 rounded-2xl border transition duration-150 shadow-lg cursor-pointer shrink-0 ${
                     voice.listening
                       ? 'bg-rose-500/20 border-rose-500/50 text-rose-300 animate-pulse'
-                      : 'bg-[#121212] border-[#2a2a2a] text-[#888] hover:text-[#ccc] hover:border-[#3a3a3a]'
+                      : 'bg-ink-900 border-ink-700 text-paper-500 hover:text-paper-400 hover:border-ink-600'
                   }`}
                 >
                   <Mic className="w-4 h-4" />
@@ -921,7 +921,7 @@ export default function MainDashboard({
                 type="submit"
                 disabled={!inputText.trim() || loadingReflection}
                 id="message-send-btn"
-                className="bg-[#8b5cf6] hover:bg-[#7c3aed] text-white font-semibold p-3.5 rounded-2xl transition duration-150 disabled:opacity-40 shadow-lg cursor-pointer shrink-0"
+                className="bg-ember-500 hover:bg-ember-600 text-paper-50 font-semibold p-3.5 rounded-2xl transition duration-150 disabled:opacity-40 shadow-lg cursor-pointer shrink-0"
               >
                 <Send className="w-4 h-4" />
               </button>

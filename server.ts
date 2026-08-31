@@ -36,8 +36,8 @@ app.use((_req, res, next) => {
 const CONTENT_SECURITY_POLICY = [
   "default-src 'self'",
   "script-src 'self' https://apis.google.com https://maps.googleapis.com https://*.gstatic.com",
-  "style-src 'self' 'unsafe-inline'",
-  "font-src 'self' data:",
+  "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+  "font-src 'self' data: https://fonts.gstatic.com",
   "img-src 'self' data: blob: https://*.googleapis.com https://*.gstatic.com https://*.ggpht.com https://lh3.googleusercontent.com",
   // Firebase Auth + Firestore WebChannel + the Gemini proxy + Maps tiles.
   "connect-src 'self' https://*.googleapis.com https://*.firebaseio.com wss://*.firebaseio.com",

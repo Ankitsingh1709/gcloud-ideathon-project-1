@@ -1,12 +1,33 @@
 import React, { useState } from 'react';
 import { signInWithPopup } from 'firebase/auth';
 import { auth, googleProvider } from '../lib/firebase';
-import { BookOpen, LogIn, Sparkles, ShieldCheck } from 'lucide-react';
+import { Lock, BrainCircuit, Mic } from 'lucide-react';
 
 interface LoginScreenProps {
   onLoginStart: () => void;
   onLoginError: (error: string) => void;
 }
+
+/** Sign-in is a rare, first-time moment — the one place a stagger is earned. */
+const rise = (delayMs: number) => ({ animationDelay: `${delayMs}ms` });
+
+const PROMISES = [
+  {
+    icon: Lock,
+    title: 'Owner-only, by design',
+    body: 'Not even an administrator can read your entries. That is enforced in the database rules, not promised in a policy.',
+  },
+  {
+    icon: BrainCircuit,
+    title: 'It remembers what you meant',
+    body: 'Search your journal by meaning rather than keywords. Ask when you last felt like this, and read your own answer.',
+  },
+  {
+    icon: Mic,
+    title: 'Speak it or type it',
+    body: 'Dictate an entry out loud. Gemini replies as it writes, then catalogues the entry when you are done.',
+  },
+];
 
 export default function LoginScreen({ onLoginStart, onLoginError }: LoginScreenProps) {
   const [loading, setLoading] = useState(false);
@@ -18,11 +39,13 @@ export default function LoginScreen({ onLoginStart, onLoginError }: LoginScreenP
       await signInWithPopup(auth, googleProvider);
     } catch (error: any) {
       console.error('Google Sign-In Error:', error);
-      let errorMsg = 'Failed to sign in with Google. Please try again.';
+      let errorMsg = 'We could not sign you in. Please try again.';
       if (error.code === 'auth/popup-blocked') {
-        errorMsg = 'Sign-in popup was blocked by your browser. Please allow popups for this site.';
+        errorMsg = 'Your browser blocked the sign-in window. Allow pop-ups for this site and try again.';
+      } else if (error.code === 'auth/popup-closed-by-user') {
+        errorMsg = 'The sign-in window closed before you finished.';
       } else if (error.code === 'auth/network-request-failed') {
-        errorMsg = 'Network connection error. Please check your internet connection.';
+        errorMsg = 'Network connection failed. Check your connection and try again.';
       }
       onLoginError(errorMsg);
     } finally {
@@ -31,90 +54,117 @@ export default function LoginScreen({ onLoginStart, onLoginError }: LoginScreenP
   };
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a] text-[#e0e0e0] flex flex-col justify-between" id="login-container">
-      {/* Top Header */}
-      <header className="px-6 py-4 flex items-center justify-between border-b border-[#2a2a2a] bg-[#0c0c0c]/80 backdrop-blur-md sticky top-0 z-50">
-        <div className="flex items-center space-x-2">
-          <div className="bg-[#1e1b26] border border-[#4c1d95]/30 p-2 rounded-xl text-[#8b5cf6]">
-            <BookOpen className="w-5 h-5" />
-          </div>
-          <span className="font-semibold text-white text-lg tracking-tight">Reflect.ai</span>
+    <div className="min-h-dvh bg-ink-950 text-paper-200 flex flex-col" id="login-container">
+      <header className="px-6 md:px-10 py-5 flex items-center justify-between">
+        <div className="flex items-center gap-2.5 animate-rise">
+          <span
+            aria-hidden="true"
+            className="w-8 h-8 rounded-lg bg-ember-500 text-ink-950 grid place-items-center font-serif text-lg font-semibold leading-none pb-0.5"
+          >
+            R
+          </span>
+          <span className="font-semibold text-paper-50 text-[15px] tracking-tight">Reflect</span>
         </div>
-        <div className="flex items-center space-x-1 text-xs text-[#8b5cf6] bg-[#1e1e1e] border border-[#8b5cf6]/20 px-2.5 py-1 rounded-full font-semibold">
-          <ShieldCheck className="w-3.5 h-3.5 text-[#d946ef] mr-1" />
-          <span>Secure AES Auth</span>
-        </div>
+        <span className="text-xs text-paper-600 animate-rise" style={rise(60)}>
+          Private journal · Google sign-in
+        </span>
       </header>
 
-      {/* Main Content Hero */}
-      <main className="flex-1 flex items-center justify-center p-6 md:p-12">
-        <div className="w-full max-w-xl bg-[#121212] rounded-3xl border border-[#2a2a2a] shadow-2xl p-8 md:p-12 space-y-8 text-center relative overflow-hidden">
-          {/* Subtle design blobs */}
-          <div className="absolute -top-10 -right-10 w-40 h-40 bg-[#8b5cf6]/10 rounded-full blur-3xl pointer-events-none" />
-          <div className="absolute -bottom-10 -left-10 w-40 h-40 bg-[#d946ef]/10 rounded-full blur-3xl pointer-events-none" />
-
-          <div className="space-y-4">
-            <div className="inline-flex bg-gradient-to-br from-[#8b5cf6] to-[#d946ef] p-4 rounded-3xl text-white shadow-lg shadow-[#8b5cf6]/30 mb-2">
-              <Sparkles className="w-8 h-8 animate-pulse" />
-            </div>
-            
-            <h1 className="text-3xl md:text-4xl font-bold text-white tracking-tight leading-tight">
-              A Private Sanctuary for Your Thoughts
+      <main className="flex-1 grid lg:grid-cols-[1.05fr_0.95fr] gap-12 lg:gap-20 items-center px-6 md:px-10 lg:px-16 py-10 max-w-[1240px] w-full mx-auto">
+        {/* Editorial half */}
+        <section className="space-y-9">
+          <div className="space-y-5">
+            <h1
+              className="font-serif text-[2.6rem] leading-[1.08] md:text-6xl md:leading-[1.05] text-paper-50 font-medium animate-rise"
+              style={rise(80)}
+            >
+              Write it down.
+              <br />
+              <span className="text-ember-400 italic">Think it through.</span>
             </h1>
-            
-            <p className="text-[#888] text-base md:text-lg max-w-md mx-auto leading-relaxed">
-              Reflect.ai is your secure personal journal. Converse with Gemini to explore your insights, summarize reflections, and uncover deeper awareness.
+            <p
+              className="text-paper-400 text-base md:text-[1.0625rem] leading-relaxed max-w-[52ch] animate-rise"
+              style={rise(150)}
+            >
+              A journal that answers back. Write or speak a reflection, think it through with
+              Gemini, and let it remember — so months later you can ask what you felt like the
+              last time, and get your own words returned to you.
             </p>
           </div>
 
-          <div className="pt-4 space-y-4 max-w-sm mx-auto">
+          <ul className="space-y-px">
+            {PROMISES.map(({ icon: Icon, title, body }, index) => (
+              <li
+                key={title}
+                className="flex gap-4 py-5 border-t border-ink-800 animate-rise"
+                style={rise(220 + index * 70)}
+              >
+                <Icon className="w-[18px] h-[18px] text-ember-500 shrink-0 mt-0.5" aria-hidden="true" />
+                <div className="space-y-1">
+                  <h2 className="text-paper-200 text-sm font-semibold">{title}</h2>
+                  <p className="text-paper-600 text-[13px] leading-relaxed max-w-[46ch]">{body}</p>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </section>
+
+        {/* Sign-in half */}
+        <section
+          className="relative bg-ink-900 border border-ink-800 rounded-3xl p-8 md:p-10 shadow-lift animate-rise"
+          style={rise(180)}
+        >
+          <div
+            aria-hidden="true"
+            className="absolute -top-24 -right-16 w-56 h-56 bg-ember-500/[0.07] rounded-full blur-3xl pointer-events-none"
+          />
+
+          <div className="relative space-y-7">
+            <div className="space-y-2">
+              <h2 className="text-paper-50 text-xl font-semibold tracking-tight">Start your journal</h2>
+              <p className="text-paper-600 text-[13px] leading-relaxed">
+                Sign in with Google. Your workspace is created the first time, and only your
+                account can open it.
+              </p>
+            </div>
+
             <button
               onClick={handleGoogleSignIn}
               disabled={loading}
               id="google-signin-btn"
-              className="w-full flex items-center justify-center space-x-3 bg-[#8b5cf6] hover:bg-[#7c3aed] text-white font-semibold px-6 py-4 rounded-2xl shadow-lg hover:shadow-[#8b5cf6]/20 transition duration-200 disabled:opacity-50 cursor-pointer"
+              className="press w-full flex items-center justify-center gap-3 bg-paper-50 hover:bg-white text-ink-950 font-semibold text-[15px] px-6 py-3.5 rounded-xl disabled:opacity-60 disabled:cursor-wait cursor-pointer"
             >
               {loading ? (
-                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                <>
+                  <span
+                    className="w-4 h-4 border-2 border-ink-950/25 border-t-ink-950 rounded-full animate-spin"
+                    aria-hidden="true"
+                  />
+                  <span>Opening Google…</span>
+                </>
               ) : (
                 <>
-                  <svg className="w-5 h-5 mr-1 fill-current" viewBox="0 0 24 24">
-                    <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
-                    <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
-                    <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" />
-                    <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" />
+                  <svg className="w-[18px] h-[18px]" viewBox="0 0 24 24" aria-hidden="true">
+                    <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+                    <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+                    <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" />
+                    <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" />
                   </svg>
-                  <span>Sign In with Google</span>
+                  <span>Continue with Google</span>
                 </>
               )}
             </button>
 
-            <p className="text-xs text-[#555] leading-normal px-4">
-              By continuing, you gain access to your fully isolated private workspace. Your entries are visible only to you.
+            <p className="text-paper-700 text-xs leading-relaxed border-t border-ink-800 pt-6">
+              Entries are stored in Cloud Firestore under your user ID and are readable only by
+              you. The Gemini key stays on the server and never reaches your browser.
             </p>
           </div>
-
-          {/* Value props */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-6 border-t border-[#2a2a2a] text-left">
-            <div className="p-3">
-              <h3 className="font-semibold text-white text-sm">Strictly Private</h3>
-              <p className="text-xs text-[#666] mt-1">Row-level Firestore isolation ensures your text is never exposed.</p>
-            </div>
-            <div className="p-3">
-              <h3 className="font-semibold text-white text-sm">Interactive AI</h3>
-              <p className="text-xs text-[#666] mt-1">Reflect, brainstorm, and seek perspective with Gemini dynamically.</p>
-            </div>
-            <div className="p-3">
-              <h3 className="font-semibold text-white text-sm">Insights Archive</h3>
-              <p className="text-xs text-[#666] mt-1">Browse, search, and trace your past states and summaries easily.</p>
-            </div>
-          </div>
-        </div>
+        </section>
       </main>
 
-      {/* Footer */}
-      <footer className="py-6 border-t border-[#2a2a2a] bg-[#0c0c0c]/80 text-center text-xs text-[#666]">
-        <span>© {new Date().getFullYear()} Reflect.ai. Built securely using Google Cloud Run, Firestore, and the Gemini API.</span>
+      <footer className="px-6 md:px-10 py-6 text-xs text-paper-700">
+        <span>Built on Cloud Run, Firestore and the Gemini API.</span>
       </footer>
     </div>
   );

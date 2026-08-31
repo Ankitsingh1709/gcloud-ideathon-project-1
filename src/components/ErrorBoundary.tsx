@@ -33,22 +33,22 @@ export default class ErrorBoundary extends React.Component<Props, State> {
     if (!this.state.error) return this.props.children;
 
     return (
-      <div className="min-h-screen bg-[#0a0a0a] flex flex-col items-center justify-center p-6 text-center">
+      <div className="min-h-screen bg-ink-950 flex flex-col items-center justify-center p-6 text-center">
         <div className="max-w-md space-y-5">
-          <div className="bg-[#1e1b26] border border-rose-900/40 p-4 rounded-3xl text-rose-400 inline-block shadow-lg">
+          <div className="bg-ember-950 border border-rose-900/40 p-4 rounded-3xl text-rose-400 inline-block shadow-lg">
             <AlertTriangle className="w-8 h-8" />
           </div>
-          <h1 className="text-[#eee] text-xl font-bold">Something broke on this screen</h1>
-          <p className="text-[#888] text-sm leading-relaxed">
+          <h1 className="text-paper-200 text-xl font-bold">Something broke on this screen</h1>
+          <p className="text-paper-500 text-sm leading-relaxed">
             Your reflections are safe — everything is stored in Firestore, not in this page.
             Reloading will bring you back to where you were.
           </p>
-          <pre className="text-left text-[11px] text-[#666] bg-[#111] border border-[#222] rounded-xl p-3 overflow-x-auto">
+          <pre className="text-left text-[11px] text-paper-600 bg-ink-900 border border-ink-800 rounded-xl p-3 overflow-x-auto">
             {this.state.error.message}
           </pre>
           <button
             onClick={() => window.location.reload()}
-            className="inline-flex items-center space-x-2 bg-[#8b5cf6] hover:bg-[#7c3aed] text-white font-semibold text-sm px-5 py-2.5 rounded-xl transition-colors"
+            className="inline-flex items-center space-x-2 bg-ember-500 hover:bg-ember-600 text-paper-50 font-semibold text-sm px-5 py-2.5 rounded-xl transition-colors"
           >
             <RefreshCw className="w-4 h-4" />
             <span>Reload</span>

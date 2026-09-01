@@ -44,20 +44,36 @@ function assert(condition: boolean, message: string) {
 
 interface MockRes {
   statusValue?: number;
+  statusCode?: number;
   jsonBody?: any;
   headers: Record<string, string>;
+  finishHandlers: Array<() => void>;
   status: (code: number) => MockRes;
   json: (body: any) => MockRes;
   setHeader: (k: string, v: string) => void;
+  on: (event: string, handler: () => void) => MockRes;
 }
 
 function createMockResponse(): MockRes {
   return {
     headers: {},
+    finishHandlers: [],
     status(code: number) { this.statusValue = code; return this; },
     json(body: any) { this.jsonBody = body; return this; },
     setHeader(k: string, v: string) { this.headers[k] = v; },
+    on(event: string, handler: () => void) {
+      if (event === 'finish') this.finishHandlers.push(handler);
+      return this;
+    },
   };
+}
+
+// The trial is billed when the response lands, so a test that never finishes
+// its response never gets charged — exactly like a request that never
+// completes.
+function finishWith(res: MockRes, statusCode: number) {
+  res.statusCode = statusCode;
+  for (const handler of res.finishHandlers) handler();
 }
 
 // Runs a middleware and reports whether it called next().
@@ -204,13 +220,15 @@ console.log('===========================================================');
 // --- trialQuota -------------------------------------------------------------
 {
   __resetTrialQuota();
-  const req = { user: { uid: 'trial-user' } };
+  const req: any = { user: { uid: 'trial-user' } };
 
   let allowed = 0;
   for (let i = 0; i < TRIAL_LIMIT; i++) {
-    if (run(trialQuota, req).nextCalled) allowed++;
+    const { res, nextCalled } = run(trialQuota, req);
+    if (nextCalled) allowed++;
+    finishWith(res, 200);
   }
-  assert(allowed === TRIAL_LIMIT, `The first ${TRIAL_LIMIT} generations are allowed`);
+  assert(allowed === TRIAL_LIMIT, `The first ${TRIAL_LIMIT} successful generations are allowed`);
 
   const { res, nextCalled } = run(trialQuota, req);
   assert(!nextCalled, `Generation ${TRIAL_LIMIT + 1} is blocked`);
@@ -227,7 +245,7 @@ console.log('===========================================================');
 
 {
   __resetTrialQuota();
-  const req = { user: { uid: 'counter-user' } };
+  const req: any = { user: { uid: 'counter-user' } };
   assert(trialRemainingFor('counter-user') === TRIAL_LIMIT, 'A new user starts with the full allowance');
 
   const { res } = run(trialQuota, req);
@@ -235,22 +253,56 @@ console.log('===========================================================');
     Number(res.headers['X-Trial-Remaining']) === TRIAL_LIMIT - 1,
     'Each generation reports the remaining allowance on the response'
   );
-  assert(trialRemainingFor('counter-user') === TRIAL_LIMIT - 1, 'The counter decrements by one per generation');
+  assert(trialRemainingFor('counter-user') === TRIAL_LIMIT, 'Nothing is charged until the response lands');
+  finishWith(res, 200);
+  assert(trialRemainingFor('counter-user') === TRIAL_LIMIT - 1, 'A successful response charges exactly one');
+}
+
+// Failures are not generations. A malformed body and an exhausted model ladder
+// both used to bill the writer for work they never received.
+{
+  __resetTrialQuota();
+  const req: any = { user: { uid: 'unlucky-user' } };
+  for (const status of [400, 429, 500, 503]) {
+    const { res } = run(trialQuota, req);
+    finishWith(res, status);
+  }
+  assert(
+    trialRemainingFor('unlucky-user') === TRIAL_LIMIT,
+    'A 400, 429, 500 or 503 costs the writer nothing'
+  );
+}
+
+// SSE commits its 200 before anything can go wrong, so the stream route opts
+// out explicitly when it fails before the writer saw a word — otherwise the
+// client's non-streaming retry would bill the same reflection twice.
+{
+  __resetTrialQuota();
+  const req: any = { user: { uid: 'stream-user' }, trialNoCharge: true };
+  const { res } = run(trialQuota, req);
+  finishWith(res, 200);
+  assert(
+    trialRemainingFor('stream-user') === TRIAL_LIMIT,
+    'A stream that opted out is not charged despite its 200'
+  );
 }
 
 {
   __resetTrialQuota();
-  const byokReq = { user: { uid: 'byok-trial-user' }, byokKey: 'AIza' + 'x'.repeat(35) };
+  const byokReq: any = { user: { uid: 'byok-trial-user' }, byokKey: 'AIza' + 'x'.repeat(35) };
   let allowed = 0;
   for (let i = 0; i < TRIAL_LIMIT + 5; i++) {
-    if (run(trialQuota, byokReq).nextCalled) allowed++;
+    const { res, nextCalled } = run(trialQuota, byokReq);
+    if (nextCalled) allowed++;
+    finishWith(res, 200);
   }
   assert(allowed === TRIAL_LIMIT + 5, 'A caller using their own key is not charged against the trial');
 }
 
 {
   __resetTrialQuota();
-  run(trialQuota, { user: { uid: 'heavy-user' } });
+  const { res } = run(trialQuota, { user: { uid: 'heavy-user' } });
+  finishWith(res, 200);
   assert(trialRemainingFor('other-user') === TRIAL_LIMIT, 'The trial is per-user, not global');
 }
 

@@ -49,9 +49,45 @@ async function authHeaders(): Promise<Record<string, string>> {
   return headers;
 }
 
+/**
+ * The shared-key trial. The server is the authority; the browser only mirrors
+ * what it was last told, either by the header every generation carries or by
+ * reading /api/trial once on sign-in so a reload does not lose the count.
+ */
+export interface TrialStatus {
+  limit: number;
+  /** null when the caller is spending their own key, which we do not meter. */
+  remaining: number | null;
+  usingOwnKey: boolean;
+}
+
+type TrialListener = (remaining: number) => void;
+let trialListener: TrialListener | null = null;
+
+export function onTrialRemainingChange(listener: TrialListener | null): void {
+  trialListener = listener;
+}
+
+function noteTrialHeader(response: Response): void {
+  const header = response.headers.get('X-Trial-Remaining');
+  if (header === null || !trialListener) return;
+  const remaining = Number(header);
+  if (Number.isFinite(remaining)) trialListener(remaining);
+}
+
+export function getTrialStatus(): Promise<TrialStatus> {
+  return getJson<TrialStatus>('/api/trial');
+}
+
 async function errorFrom(response: Response, fallback: string): Promise<Error> {
   const data = await response.json().catch(() => ({} as any));
   if (response.status === 429) {
+    // An exhausted trial and a burst rate limit share a status code but not a
+    // remedy: one is fixed by waiting, the other never is.
+    if (data.code === 'TRIAL_EXHAUSTED') {
+      if (trialListener) trialListener(0);
+      return new Error(data.error || 'Your trial generations are used up. Add your own Gemini API key to continue.');
+    }
     const retryAfter = response.headers.get('Retry-After');
     return new Error(data.error || `Too many requests. Try again in ${retryAfter || 'a few'} seconds.`);
   }
@@ -65,6 +101,7 @@ export async function postJson<T>(path: string, body: unknown): Promise<T> {
     body: JSON.stringify(body),
   });
   if (!response.ok) throw await errorFrom(response, `Request to ${path} failed (${response.status}).`);
+  noteTrialHeader(response);
   return response.json();
 }
 
@@ -94,6 +131,7 @@ export async function postStream(
   });
 
   if (!response.ok) throw await errorFrom(response, `Stream request failed (${response.status}).`);
+  noteTrialHeader(response);
   if (!response.body) throw new Error('Streaming is not supported by this browser.');
 
   const reader = response.body.getReader();

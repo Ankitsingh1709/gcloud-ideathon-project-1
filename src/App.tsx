@@ -9,10 +9,10 @@ import MainDashboard from './components/MainDashboard';
 import InsightsDashboard from './components/InsightsDashboard';
 import AdminDashboard from './components/AdminDashboard';
 import WelcomeNote from './components/WelcomeNote';
+import { getTrialStatus, onTrialRemainingChange, type TrialStatus } from './lib/api';
 import { AlertTriangle, BookOpen, RefreshCw } from 'lucide-react';
 
 const WELCOME_SEEN_KEY = 'reflect.welcomeSeen';
-const TRIAL_LIMIT = 10;
 
 export default function App() {
   const [user, setUser] = useState<UserProfile | null>(null);
@@ -25,6 +25,7 @@ export default function App() {
   // Shown once per browser on a first sign-in. Reading it lazily keeps the
   // modal from flashing for a returning writer while auth resolves.
   const [showWelcome, setShowWelcome] = useState(false);
+  const [trial, setTrial] = useState<TrialStatus | null>(null);
 
   // Filters State
   const [searchQuery, setSearchQuery] = useState('');
@@ -64,6 +65,12 @@ export default function App() {
         } catch {
           /* private mode: skip the note rather than showing it every load */
         }
+
+        // The allowance is the server's number. Read it once here so a reload
+        // does not lose the count, then follow X-Trial-Remaining after that.
+        getTrialStatus()
+          .then(setTrial)
+          .catch(() => { /* the count is a courtesy; the server still enforces it */ });
       } else {
         setUser(null);
         setEntries([]);
@@ -213,6 +220,13 @@ export default function App() {
 
   const activeEntry = getActiveEntry();
 
+  useEffect(() => {
+    onTrialRemainingChange((remaining) =>
+      setTrial(prev => (prev ? { ...prev, remaining } : prev))
+    );
+    return () => onTrialRemainingChange(null);
+  }, []);
+
   const dismissWelcome = () => {
     setShowWelcome(false);
     try {
@@ -224,10 +238,10 @@ export default function App() {
 
   return (
     <div className="h-screen bg-ink-950 flex flex-col overflow-hidden" id="app-root-workspace">
-      {showWelcome && (
+      {showWelcome && trial && (
         <WelcomeNote
           displayName={user.displayName}
-          trialLimit={TRIAL_LIMIT}
+          trialLimit={trial.limit}
           onClose={dismissWelcome}
         />
       )}
@@ -251,6 +265,7 @@ export default function App() {
       <div className="flex-1 flex overflow-hidden">
         <Sidebar 
           user={user}
+          trial={trial}
           entries={entries}
           selectedEntryId={selectedEntryId}
           onSelectEntry={(id) => {

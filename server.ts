@@ -14,7 +14,7 @@ const app = express();
 const PORT = Number(process.env.PORT) || 3000;
 const FIREBASE_PROJECT_ID = process.env.FIREBASE_PROJECT_ID || "lab1-rag-project";
 const FIREBASE_AUTH_DOMAIN = `${FIREBASE_PROJECT_ID}.firebaseapp.com`;
-const APP_VERSION = '1.4.0';
+const APP_VERSION = '1.4.1';
 
 // Bound the request body before any route handler ever sees it.
 app.use(express.json({ limit: '64kb' }));
@@ -221,8 +221,16 @@ export function trialQuota(req: any, res: any, next: any) {
     });
   }
 
-  trialUsed.set(uid, used + 1);
+  // Charged when the response lands, not when the request arrives. A 400 from
+  // a malformed body, a 500 from an exhausted model ladder, and a stream that
+  // died before the writer saw a word are not generations anybody received.
+  // Streaming needs the explicit opt-out because SSE commits its 200 up front.
   res.setHeader('X-Trial-Remaining', String(TRIAL_LIMIT - used - 1));
+  res.on('finish', () => {
+    if (req.trialNoCharge) return;
+    if (res.statusCode < 200 || res.statusCode >= 300) return;
+    trialUsed.set(uid, (trialUsed.get(uid) || 0) + 1);
+  });
   next();
 }
 
@@ -679,12 +687,38 @@ app.post('/api/gemini/reflect/stream', generationGuards, async (req: any, res: a
         ]);
         clearTimeout(timer);
 
-        committedModel = model;
+        // A refusal arrives as a perfectly ordinary chunk carrying only a
+        // block reason. Committing here would send `done` with no text at
+        // all, which reaches the writer as "the reflection came back empty" —
+        // on the one path where the care guardrail matters most.
+        const blockedUpFront = safetyBlockOf(firstChunk.value);
+        if (blockedUpFront) {
+          console.warn(`Stream blocked by the safety filter (${blockedUpFront}); answering with care instead.`);
+          req.trialNoCharge = true;
+          res.write(`data: ${JSON.stringify({ text: SAFETY_BLOCK_REPLY })}\n\n`);
+          res.write(`data: ${JSON.stringify({ done: true, modelUsed: 'safety-guardrail' })}\n\n`);
+          res.end();
+          return;
+        }
+
+        // "Committed" means the writer has actually SEEN text, not that a
+        // chunk arrived. Setting it any earlier makes an empty stream
+        // unretryable for no reason.
         if (!firstChunk.done && firstChunk.value?.text) {
           res.write(`data: ${JSON.stringify({ text: firstChunk.value.text })}\n\n`);
+          committedModel = model;
         }
         for (let next = await iterator.next(); !next.done; next = await iterator.next()) {
-          if (next.value?.text) res.write(`data: ${JSON.stringify({ text: next.value.text })}\n\n`);
+          if (next.value?.text) {
+            res.write(`data: ${JSON.stringify({ text: next.value.text })}\n\n`);
+            committedModel = model;
+          }
+        }
+
+        // Completed without ever speaking. Fall to the next model rather than
+        // reporting a successful reply that contains nothing.
+        if (!committedModel) {
+          throw new Error(`Model ${model} completed the stream without producing any text`);
         }
 
         res.write(`data: ${JSON.stringify({ done: true, modelUsed: model })}\n\n`);
@@ -705,6 +739,11 @@ app.post('/api/gemini/reflect/stream', generationGuards, async (req: any, res: a
     throw new Error(`All streaming models failed. Last error: ${safeMessage(lastError)}`);
   } catch (error: any) {
     console.error('Error in /api/gemini/reflect/stream:', safeMessage(error));
+    // An SSE response has already sent its 200, so a failure here cannot be
+    // seen in the status code — and the client answers a failed stream by
+    // retrying the non-streaming route. Without this, one reflection the
+    // writer never saw would bill two of their ten.
+    req.trialNoCharge = true;
     // Headers are already sent, so the failure has to travel inside the stream.
     res.write(`data: ${JSON.stringify({ error: safeMessage(error) })}\n\n`);
     res.end();

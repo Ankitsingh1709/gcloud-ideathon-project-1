@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { JournalEntry, UserProfile } from '../types';
-import { postJson, getStoredByokKey, setStoredByokKey, GEMINI_KEY_SHAPE } from '../lib/api';
+import { postJson, getStoredByokKey, setStoredByokKey, GEMINI_KEY_SHAPE, type TrialStatus } from '../lib/api';
 import { cosineSimilarity } from '../lib/vector';
 import { getMoodColor } from '../lib/mood';
 import { applyTheme, getTheme, type Theme } from '../lib/theme';
@@ -26,12 +26,14 @@ interface SidebarProps {
   selectedMood: string;
   onMoodChange: (mood: string) => void;
   onDeleteEntry: (id: string) => void;
+  trial?: TrialStatus | null;
   currentView?: 'workspace' | 'insights' | 'admin';
   onViewChange?: (view: 'workspace' | 'insights' | 'admin') => void;
 }
 
 export default function Sidebar({
   user,
+  trial,
   entries,
   selectedEntryId,
   onSelectEntry,
@@ -436,6 +438,24 @@ export default function Sidebar({
 
       {/* Bring your own Gemini key */}
       <div className="px-4 pt-3 border-t border-ink-700">
+        {trial && trial.remaining !== null && (
+          // The welcome note promises an allowance; this is where the promise
+          // is kept. It sits directly above the key field, so the remedy is
+          // already on screen when the number gets low.
+          <div
+            className={`mb-2.5 flex items-center justify-between text-[11px] font-semibold ${
+              trial.remaining === 0 ? 'text-ember-400' : 'text-paper-600'
+            }`}
+            id="trial-remaining"
+          >
+            <span>Trial generations</span>
+            <span className="tabular">
+              {trial.remaining === 0
+                ? 'Used up — add your key'
+                : `${trial.remaining} of ${trial.limit} left`}
+            </span>
+          </div>
+        )}
         <button
           type="button"
           onClick={() => setShowKeyPanel(v => !v)}

@@ -293,6 +293,11 @@ export default function MainDashboard({
           streamed += text;
           setStreamingText(streamed);
         });
+        // A stream can succeed and still say nothing. Treat that as a failure
+        // here, inside the try, so it falls back like any other — the
+        // non-streaming route answers a provider refusal with care, and
+        // throwing outside this block would skip it entirely.
+        if (!streamed) throw new Error('The reflection came back empty.');
       } catch (streamErr: any) {
         // Falling back is only safe before anything reached the screen;
         // retrying afterwards would replay text the user already watched.

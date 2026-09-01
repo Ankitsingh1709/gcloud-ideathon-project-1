@@ -47,6 +47,7 @@ use it in the live app.
 - [Admins cannot read your journal](#admins-cannot-read-your-journal)
 - [Isolation is enforced by rules, not by the client](#isolation-is-enforced-by-rules-not-by-the-client)
 - [Keys never reach the browser](#keys-never-reach-the-browser)
+- [The one key that must be public is fenced instead](#the-one-key-that-must-be-public-is-fenced-instead)
 - [The API is bounded](#the-api-is-bounded)
 - [Browser hardening](#browser-hardening)
 
@@ -338,6 +339,35 @@ metadata that an earlier model wrote. Every prompt states that the content is
 never an instruction — see
 [Care and safety guardrails](#care-and-safety-guardrails).
 
+## The one key that must be public is fenced instead
+
+Every other key in this project can be kept out of the browser. The Google
+Maps browser key cannot — the Maps JavaScript API runs client-side, so the key
+is necessarily readable by anyone who opens devtools. Treating it as a secret
+would be theatre.
+
+So it is not secured by secrecy, it is **fenced on two axes**, and both are
+required. Either one alone leaves a usable key:
+
+| Restriction | Value | What it stops |
+|---|---|---|
+| **Application** (HTTP referrer) | the two Cloud Run URLs + `localhost:3000` | The key lifted from the bundle and used on someone else's site, billed to this project |
+| **API** | Maps JavaScript API only | The key being spent on any *other* Google API, even from an allowed page |
+
+Both Cloud Run hostnames are listed deliberately. Cloud Run serves this
+service on two URLs — the newer project-number form and the older hash form —
+and the console shows the hash one. A key fenced to only the URL you happened
+to copy leaves the map broken for anyone arriving by the other.
+
+The same applies to Firebase sign-in, for the same reason: **both** hostnames
+are in Authentication → Settings → Authorized domains. A missing one does not
+degrade — Google sign-in simply fails on that URL while working perfectly on
+the other, which is a hard failure to reproduce if you only ever test one.
+
+> Referrer values are matched as URL prefixes. `https://host/` covers a
+> single-route app served from the root; add `https://host/*` as well if the
+> app ever grows paths, so a deep link does not fall outside the fence.
+
 ## The API is bounded
 
 | Control | Limit |
@@ -418,9 +448,17 @@ firebase deploy --only firestore:rules
 
 1. Add your Cloud Run URL to Firebase Console → Authentication → Settings →
    **Authorized domains**, or sign-in works locally and fails in production.
-2. Restrict the Maps key by **HTTP referrer** (Console → Credentials) to your Cloud
-   Run URL. A browser key is necessarily visible in the bundle, so the referrer
-   allowlist is what stops someone else spending it.
+2. Fence the Maps key (Console → Credentials → the Maps key). Set
+   **Application restrictions → Websites** to every hostname the app is served
+   from — Cloud Run gives you two — plus `http://localhost:3000/`, and set
+   **API restrictions** to the Maps JavaScript API alone. See
+   [the one key that must be public](#the-one-key-that-must-be-public-is-fenced-instead).
+   Verify it took:
+
+   ```bash
+   gcloud services api-keys list \
+     --format='table(displayName,restrictions.browserKeyRestrictions.allowedReferrers)'
+   ```
 3. Confirm it is up:
 
    ```bash

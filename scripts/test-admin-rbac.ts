@@ -22,6 +22,9 @@ import {
   digestInstruction,
   UNTRUSTED_CONTENT_RULE,
   CRISIS_CARE_RULE,
+  SCOPE_RULE,
+  SAFETY_BLOCK_REPLY,
+  safetyBlockOf,
   MAX_MESSAGES,
   MAX_TOTAL_CHARS,
 } from '../server';
@@ -167,6 +170,35 @@ console.log('===========================================================');
     !UNTRUSTED_CONTENT_RULE.includes('${'),
     'The guardrail text interpolated rather than shipping a literal placeholder'
   );
+}
+
+// --- safety-block handling --------------------------------------------------
+{
+  assert(
+    JOURNAL_SYSTEM_INSTRUCTION.includes(SCOPE_RULE),
+    'The companion refuses to be repurposed as a general-purpose assistant'
+  );
+  assert(
+    /ignore your previous instructions/i.test(SCOPE_RULE),
+    'The scope rule names the jailbreak phrasing it has to survive'
+  );
+  assert(
+    !/restricted|configured|system prompt/i.test(SAFETY_BLOCK_REPLY),
+    'The blocked reply never explains itself as a configuration limit'
+  );
+  assert(
+    /988|Samaritans|crisis line/i.test(SAFETY_BLOCK_REPLY),
+    'A blocked reply still routes the person to real support'
+  );
+
+  assert(safetyBlockOf({ promptFeedback: { blockReason: 'SAFETY' } }) === 'SAFETY',
+    'A blocked prompt is detected');
+  assert(safetyBlockOf({ candidates: [{ finishReason: 'PROHIBITED_CONTENT' }] }) === 'PROHIBITED_CONTENT',
+    'A blocked candidate is detected');
+  assert(safetyBlockOf({ candidates: [{ finishReason: 'STOP' }], text: 'hello' }) === null,
+    'A normal completion is not mistaken for a block');
+  assert(safetyBlockOf(undefined) === null, 'A missing response does not throw');
+  assert(safetyBlockOf({}) === null, 'An empty response is not mistaken for a block');
 }
 
 // --- trialQuota -------------------------------------------------------------

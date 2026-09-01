@@ -174,6 +174,25 @@ does not diagnose, does not minimise, and does not end that reply with a
 probing question. The weekly letter carries the same rule for distress that
 shows up as a sustained pattern rather than a single entry.
 
+**The companion is a journaling companion and nothing else.** Sign-in is open
+to any Google account, so without a scope rule the shared Gemini key is a free
+general-purpose LLM behind a Google login — ask it to write code, do homework,
+or *"ignore all your previous instructions"*, and a warm, helpful assistant
+obliges. It now declines that work in a sentence and offers to help you write
+instead, without quoting its rules or announcing that it has been restricted.
+The [trial allowance](#bring-your-own-key) is what bounds the *cost* of the
+attempt; this is what bounds the *behaviour*.
+
+**A provider refusal answers the person, not the exception.** If Gemini's own
+safety filter blocks an entry, every model in the fallback ladder will refuse
+the same text — so the ladder stops instead of spending 45 seconds arriving at
+the same place, and the reply is a written one that acknowledges the refusal
+and points to real support. Otherwise someone who had just written the hardest
+thing they have written all year would read *"All Gemini fallback models
+exhausted."* Cataloguing a blocked entry falls back to neutral metadata rather
+than failing, because the entries most worth keeping are exactly the ones that
+must not fail to save.
+
 **Journal text is untrusted input.** Usually it is the writer's own words —
 but people paste emails, messages and articles into a journal, and an entry's
 model-written title and summary are fed back into the weekly letter later. So

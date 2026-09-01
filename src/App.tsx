@@ -119,6 +119,16 @@ export default function App() {
     return () => unsubscribeSnapshot();
   }, [user]);
 
+  // Follow the trial count that every generation reports back on its response.
+  // Must sit above the early returns below: a hook that only runs once the
+  // user is loaded changes the hook count between renders.
+  useEffect(() => {
+    onTrialRemainingChange((remaining) =>
+      setTrial(prev => (prev ? { ...prev, remaining } : prev))
+    );
+    return () => onTrialRemainingChange(null);
+  }, []);
+
   const handleSignOut = async () => {
     try {
       await signOut(auth);
@@ -219,13 +229,6 @@ export default function App() {
   }
 
   const activeEntry = getActiveEntry();
-
-  useEffect(() => {
-    onTrialRemainingChange((remaining) =>
-      setTrial(prev => (prev ? { ...prev, remaining } : prev))
-    );
-    return () => onTrialRemainingChange(null);
-  }, []);
 
   const dismissWelcome = () => {
     setShowWelcome(false);

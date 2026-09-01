@@ -14,7 +14,7 @@ const app = express();
 const PORT = Number(process.env.PORT) || 3000;
 const FIREBASE_PROJECT_ID = process.env.FIREBASE_PROJECT_ID || "lab1-rag-project";
 const FIREBASE_AUTH_DOMAIN = `${FIREBASE_PROJECT_ID}.firebaseapp.com`;
-const APP_VERSION = '1.4.2';
+const APP_VERSION = '1.4.3';
 
 // Bound the request body before any route handler ever sees it.
 app.use(express.json({ limit: '64kb' }));

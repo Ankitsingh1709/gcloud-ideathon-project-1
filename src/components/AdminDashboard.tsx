@@ -3,7 +3,7 @@ import { auth, db } from '../lib/firebase';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { 
   ShieldAlert, Cpu, CheckCircle2, Clock, Terminal, Copy, Check, 
-  Activity, Key, RefreshCw, AlertCircle
+  Activity, Key, RefreshCw, AlertCircle, Users
 } from 'lucide-react';
 
 interface SystemStats {
@@ -18,9 +18,12 @@ interface SystemStats {
     roleBasedAccessControl: boolean;
     secureRulesDeployment: boolean;
   };
+  // null when the server cannot reach Firebase Auth (no ADC locally).
+  users: { total: number; active: number } | null;
   systemMetrics: {
-    activeSessions: number;
-    totalRequestsServed: number;
+    rateLimitPerUser: string;
+    trackedRateLimitUsers: number;
+    activeWindowDays: number;
   };
 }
 
@@ -273,12 +276,28 @@ export default function AdminDashboard() {
               {/* Stat 2 */}
               <div className="bg-ink-900 border border-ink-800 p-6 rounded-2xl flex items-center space-x-4">
                 <div className="bg-ember-950/30 border border-ember-900/30 p-3 rounded-xl text-ember-400 shrink-0">
-                  <Activity className="w-6 h-6" />
+                  <Users className="w-6 h-6" />
                 </div>
                 <div>
-                  <p className="text-xs text-paper-600 font-semibold uppercase tracking-wider">Active Metrics</p>
-                  <p className="text-lg font-bold text-paper-50 mt-0.5">{stats.systemMetrics.totalRequestsServed} Requests</p>
-                  <p className="text-[10px] text-ink-600 mt-0.5">Admin Sessions: {stats.systemMetrics.activeSessions}</p>
+                  <p className="text-xs text-paper-600 font-semibold uppercase tracking-wider">Registered Users</p>
+                  {stats.users ? (
+                    <>
+                      <p className="text-lg font-bold text-paper-50 mt-0.5">
+                        {stats.users.total} Total
+                        <span className="text-ember-400"> · {stats.users.active} Active</span>
+                      </p>
+                      <p className="text-[10px] text-ink-600 mt-0.5">
+                        Active = signed in within {stats.systemMetrics.activeWindowDays} days
+                      </p>
+                    </>
+                  ) : (
+                    <>
+                      <p className="text-lg font-bold text-paper-500 mt-0.5">Unavailable</p>
+                      <p className="text-[10px] text-ink-600 mt-0.5">
+                        Firebase Auth unreachable — run <code>gcloud auth application-default login</code>
+                      </p>
+                    </>
+                  )}
                 </div>
               </div>
 

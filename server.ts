@@ -5,6 +5,8 @@ import { GoogleGenAI, Type } from '@google/genai';
 import jwt from 'jsonwebtoken';
 import jwksRsa from 'jwks-rsa';
 import dotenv from 'dotenv';
+import { getApps, initializeApp as initAdminApp } from 'firebase-admin/app';
+import { getAuth as getAdminAuth } from 'firebase-admin/auth';
 import { l2Normalize } from './src/lib/vector';
 
 dotenv.config();
@@ -624,9 +626,37 @@ app.post('/api/gemini/analyze', generationGuards, async (req: any, res: any) => 
   }
 });
 
+// A user counts as active if their session refreshed inside this window.
+const ACTIVE_WINDOW_MS = 7 * 24 * 60 * 60 * 1000;
+
+/**
+ * Head-count from Firebase Auth. Returns null rather than throwing: the admin
+ * console must still render its other stats when Application Default
+ * Credentials are missing (a plain `npm run dev` without `gcloud auth
+ * application-default login`).
+ */
+async function countUsers(): Promise<{ total: number; active: number } | null> {
+  try {
+    if (getApps().length === 0) initAdminApp({ projectId: FIREBASE_PROJECT_ID });
+    // ponytail: one page, so the count tops out at 1000. Page through
+    // pageToken only once this deployment actually passes that many users.
+    const { users } = await getAdminAuth().listUsers(1000);
+    const cutoff = Date.now() - ACTIVE_WINDOW_MS;
+    const active = users.filter(u => {
+      const seen = u.metadata.lastRefreshTime || u.metadata.lastSignInTime;
+      return Boolean(seen) && Date.parse(seen as string) >= cutoff;
+    }).length;
+    return { total: users.length, active };
+  } catch (error: any) {
+    console.warn('User head-count unavailable:', safeMessage(error));
+    return null;
+  }
+}
+
 // Route 3: Secure admin system-stats route gated by Custom Claims verified server-side
-app.get('/api/admin/system-stats', authenticateFirebaseUser, requireAdminRole, (req: any, res: any) => {
+app.get('/api/admin/system-stats', authenticateFirebaseUser, requireAdminRole, async (req: any, res: any) => {
   res.json({
+    users: await countUsers(),
     status: 'operational',
     version: APP_VERSION,
     uptimeSeconds: process.uptime(),
@@ -643,6 +673,7 @@ app.get('/api/admin/system-stats', authenticateFirebaseUser, requireAdminRole, (
     systemMetrics: {
       rateLimitPerUser: `${RATE_LIMIT_MAX} req / ${RATE_LIMIT_WINDOW_MS / 60000} min`,
       trackedRateLimitUsers: rateLimitHits.size,
+      activeWindowDays: ACTIVE_WINDOW_MS / 86400000,
     }
   });
 });

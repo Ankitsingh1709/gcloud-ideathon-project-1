@@ -199,7 +199,7 @@ export default function AdminDashboard() {
       </header>
 
       {/* Main Content Pane */}
-      <div className="max-w-4xl mx-auto w-full p-8 space-y-8">
+      <div className="max-w-4xl mx-auto w-full p-4 sm:p-8 space-y-8">
         {/* Bootstrap Instruction Box */}
         <section className="bg-ink-900 border border-ember-900/40 rounded-2xl p-6 relative overflow-hidden">
           <div className="flex items-start space-x-4">

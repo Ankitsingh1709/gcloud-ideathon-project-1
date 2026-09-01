@@ -223,7 +223,7 @@ export default function InsightsDashboard({ entries }: InsightsDashboardProps) {
   };
 
   return (
-    <div className="flex-1 flex flex-col bg-ink-950 overflow-y-auto p-8 space-y-8" id="insights-dashboard-root">
+    <div className="flex-1 flex flex-col bg-ink-950 overflow-y-auto p-4 sm:p-8 space-y-8" id="insights-dashboard-root">
       {/* Tab Header Header */}
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between border-b border-ink-700 pb-6 space-y-4 md:space-y-0">
         <div className="space-y-1.5 text-left">

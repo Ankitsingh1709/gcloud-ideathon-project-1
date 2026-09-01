@@ -4,9 +4,8 @@ import { JournalEntry, UserProfile } from '../types';
 import { postJson, getStoredByokKey, setStoredByokKey, GEMINI_KEY_SHAPE, type TrialStatus } from '../lib/api';
 import { cosineSimilarity } from '../lib/vector';
 import { getMoodColor } from '../lib/mood';
-import { applyTheme, getTheme, type Theme } from '../lib/theme';
 import { 
-  LogOut, Plus, Search, BookOpen, Sun, Moon, 
+  Plus, Search, BookOpen,
   Calendar, Hash, Smile, Sparkles, FilterX, BrainCircuit, ShieldAlert,
   KeyRound, Loader2, Type as TypeIcon
 } from 'lucide-react';
@@ -18,7 +17,6 @@ interface SidebarProps {
   selectedEntryId: string | null;
   onSelectEntry: (id: string) => void;
   onNewEntry: () => void;
-  onSignOut: () => void;
   searchQuery: string;
   onSearchChange: (query: string) => void;
   selectedCategory: string;
@@ -38,7 +36,6 @@ export default function Sidebar({
   selectedEntryId,
   onSelectEntry,
   onNewEntry,
-  onSignOut,
   searchQuery,
   onSearchChange,
   selectedCategory,
@@ -105,14 +102,6 @@ export default function Sidebar({
     }
   };
 
-  const [theme, setTheme] = useState<Theme>(getTheme);
-
-  const toggleTheme = () => {
-    const next: Theme = theme === 'dark' ? 'light' : 'dark';
-    setTheme(next);
-    applyTheme(next);
-  };
-
   const saveByokKey = () => {
     const trimmed = byokDraft.trim();
     if (trimmed && !GEMINI_KEY_SHAPE.test(trimmed)) return;
@@ -155,7 +144,7 @@ export default function Sidebar({
   };
 
   return (
-    <aside className="w-80 border-r border-ink-700 bg-ink-900 flex flex-col h-full shrink-0" id="sidebar-container">
+    <aside className="w-80 max-w-[85vw] border-r border-ink-700 bg-ink-900 flex flex-col h-full shrink-0" id="sidebar-container">
       {/* Sidebar Header / Brand */}
       <div className="p-4 border-b border-ink-700 flex items-center justify-between">
         <div className="flex items-center space-x-2">
@@ -511,46 +500,6 @@ export default function Sidebar({
         )}
       </div>
 
-      {/* User Information Profile Area */}
-      <div className="p-4 border-t border-ink-700" id="user-profile-footer">
-        <div className="flex items-center gap-3 p-2 bg-ink-850 rounded-xl border border-ink-700 overflow-hidden">
-          {user.photoURL ? (
-            <img 
-              src={user.photoURL} 
-              alt={user.displayName || 'Profile'} 
-              referrerPolicy="no-referrer"
-              className="w-8 h-8 rounded-full object-cover border border-ink-700 shadow-sm"
-            />
-          ) : (
-            <div className="w-8 h-8 rounded-full bg-ember-500 text-ink-950 flex items-center justify-center font-bold text-xs">
-              {user.displayName ? user.displayName[0].toUpperCase() : 'U'}
-            </div>
-          )}
-          <div className="flex-1 min-w-0">
-            <p className="text-xs font-medium text-paper-50 truncate">{user.displayName || 'Reflective Mind'}</p>
-            <p className="text-[10px] text-paper-600 truncate">{user.email || 'Private Account'}</p>
-          </div>
-
-          <button
-            onClick={toggleTheme}
-            id="theme-toggle-btn"
-            className="p-1 hover:bg-ink-850 text-paper-600 hover:text-ember-400 rounded-lg transition cursor-pointer press"
-            title={theme === 'dark' ? 'Switch to light' : 'Switch to dark'}
-            aria-label={theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'}
-          >
-            {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-          </button>
-
-          <button
-            onClick={onSignOut}
-            id="logout-btn"
-            className="p-1 hover:bg-ink-850 text-paper-600 hover:text-ember-400 rounded-lg transition cursor-pointer"
-            title="Sign Out"
-          >
-            <LogOut className="w-4 h-4" />
-          </button>
-        </div>
-      </div>
     </aside>
   );
 }

@@ -6,7 +6,7 @@ import { getMoodColor } from '../lib/mood';
 import { 
   Sparkles, Send, Save, CheckCircle, AlertTriangle, 
   RefreshCw, Smile, Hash, BookOpen, BrainCircuit, Feather,
-  Calendar, Clock, ChevronDown, ChevronUp, Plus, Mic
+  Calendar, Clock, ChevronDown, ChevronUp, Plus, Mic, Maximize2, Minimize2
 } from 'lucide-react';
 import MapPicker from './MapPicker';
 
@@ -55,6 +55,11 @@ export default function MainDashboard({
   }[]>([]);
   const [isOnThisDayExpanded, setIsOnThisDayExpanded] = useState(false);
   const [seedingMilestone, setSeedingMilestone] = useState<string | null>(null);
+
+  // The details/location pane folds away at every width so the conversation can
+  // take the screen. It stays closed until there is room for three columns —
+  // sidebar + pane + thread only fits from lg up.
+  const [showDetails, setShowDetails] = useState(() => window.innerWidth >= 1024);
 
   // Milestone matching logic
   useEffect(() => {
@@ -443,12 +448,12 @@ export default function MainDashboard({
   return (
     <div className="flex-1 bg-ink-950 flex flex-col h-full overflow-hidden" id="workspace-container">
       {/* Workspace Header */}
-      <header className="px-6 py-4 border-b border-ink-700 bg-ink-900/80 backdrop-blur-md flex items-center justify-between sticky top-0 z-10">
-        <div className="flex items-center space-x-3 overflow-hidden">
+      <header className="px-3 sm:px-6 py-3 sm:py-4 border-b border-ink-700 bg-ink-900/80 backdrop-blur-md flex items-center justify-between sticky top-0 z-10">
+        <div className="flex items-center space-x-3 overflow-hidden flex-1 min-w-0">
           <div className="bg-ember-950 border border-ember-900/30 p-2 rounded-xl text-ember-500 shrink-0">
             <Feather className="w-5 h-5" />
           </div>
-          <div className="overflow-hidden flex flex-col justify-center">
+          <div className="overflow-hidden flex flex-col justify-center min-w-0 flex-1">
             <input
               type="text"
               value={localTitle}
@@ -475,7 +480,7 @@ export default function MainDashboard({
                 }
               }}
               placeholder="Title your reflection..."
-              className="bg-transparent border-b border-transparent hover:border-ink-700 focus:border-ember-500 text-base font-bold text-paper-50 focus:outline-none py-0.5 rounded transition max-w-xs md:max-w-md"
+              className="w-full bg-transparent border-b border-transparent hover:border-ink-700 focus:border-ember-500 text-base font-bold text-paper-50 focus:outline-none py-0.5 rounded transition"
               id="title-input-header"
             />
             <div className="flex items-center space-x-2 mt-0.5">
@@ -492,17 +497,17 @@ export default function MainDashboard({
         </div>
 
         {/* Sync / State Alerts */}
-        <div className="flex items-center space-x-3 shrink-0">
+        <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
           {saveStatus === 'saving' && (
             <div className="flex items-center space-x-1.5 text-xs text-paper-400 bg-ink-850 border border-ink-700 px-3 py-1.5 rounded-full animate-pulse font-semibold">
               <RefreshCw className="w-3.5 h-3.5 animate-spin text-ember-500" />
-              <span>Saving...</span>
+              <span className="hidden sm:inline">Saving...</span>
             </div>
           )}
           {saveStatus === 'saved' && (
             <div className="flex items-center space-x-1.5 text-xs text-ember-500 bg-ember-950 border border-ember-900/30 px-3 py-1.5 rounded-full font-semibold">
               <CheckCircle className="w-3.5 h-3.5 text-ember-400" />
-              <span>Saved</span>
+              <span className="hidden sm:inline">Saved</span>
             </div>
           )}
           {saveStatus === 'error' && (
@@ -512,9 +517,20 @@ export default function MainDashboard({
               title={lastErrorMessage}
             >
               <AlertTriangle className="w-3.5 h-3.5" />
-              <span>Save Failed (Retry)</span>
+              <span className="hidden sm:inline">Save Failed (Retry)</span>
             </button>
           )}
+
+          <button
+            type="button"
+            onClick={() => setShowDetails(v => !v)}
+            aria-expanded={showDetails}
+            title={showDetails ? 'Hide details & location' : 'Show details & location'}
+            id="details-toggle-btn"
+            className="p-2 rounded-xl text-paper-50 hover:bg-ink-850 transition cursor-pointer shrink-0"
+          >
+            {showDetails ? <Maximize2 className="w-5 h-5" /> : <Minimize2 className="w-5 h-5" />}
+          </button>
 
           <button
             onClick={handleManualSave}
@@ -523,15 +539,15 @@ export default function MainDashboard({
             className="flex items-center space-x-1.5 bg-ember-500 hover:bg-ember-600 text-ink-950 font-semibold text-xs px-3.5 py-2 rounded-xl transition disabled:opacity-50 cursor-pointer"
           >
             <Save className="w-3.5 h-3.5" />
-            <span>Save Thread</span>
+            <span className="hidden sm:inline">Save Thread</span>
           </button>
         </div>
       </header>
 
       {/* Main Workspace Body */}
-      <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
+      <div className="flex-1 flex flex-col lg:flex-row overflow-hidden">
         {/* Dynamic AI Insights Pane (Sticky or Top on small screens) */}
-        <div className="w-full md:w-80 border-b md:border-b-0 md:border-r border-ink-700 bg-ink-900 p-6 flex flex-col justify-between overflow-y-auto shrink-0 space-y-6">
+        <div className={`${showDetails ? 'flex' : 'hidden'} w-full lg:w-80 max-h-[65vh] lg:max-h-none border-b lg:border-b-0 lg:border-r border-ink-700 bg-ink-900 p-4 sm:p-6 flex-col justify-between overflow-y-auto shrink-0 space-y-6`}>
           <div className="space-y-6">
             <div>
               <div className="flex items-center space-x-2 text-paper-50 font-bold text-sm mb-3">
@@ -546,8 +562,8 @@ export default function MainDashboard({
             {/* Title Insight */}
             <div className="space-y-1.5 bg-ink-850 p-4 rounded-2xl border border-ink-700">
               <span className="text-[10px] font-bold text-paper-600 uppercase tracking-wider block">Generated Title</span>
-              <input
-                type="text"
+              <textarea
+                rows={2}
                 value={localTitle}
                 onChange={(e) => setLocalTitle(e.target.value)}
                 onBlur={async () => {
@@ -572,7 +588,7 @@ export default function MainDashboard({
                   }
                 }}
                 placeholder="Untitled Space"
-                className="w-full bg-transparent border-b border-transparent hover:border-ink-700 focus:border-ember-500 font-semibold text-paper-50 text-sm focus:outline-none py-0.5 rounded transition"
+                className="w-full resize-none field-sizing-content bg-transparent border-b border-transparent hover:border-ink-700 focus:border-ember-500 font-semibold text-paper-50 text-sm leading-snug focus:outline-none py-0.5 rounded transition"
                 id="title-input-insights"
               />
             </div>
@@ -644,7 +660,7 @@ export default function MainDashboard({
         {/* Conversation / Typing Panel */}
         <div className="flex-1 flex flex-col justify-between bg-ink-950 overflow-hidden h-full">
           {/* "On This Day" Panel */}
-          <div className="border-b border-ink-700 bg-ink-900/90 px-6 py-3.5 flex flex-col space-y-3 shrink-0" id="on-this-day-dashboard-panel">
+          <div className="border-b border-ink-700 bg-ink-900/90 px-4 sm:px-6 py-3.5 flex flex-col space-y-3 shrink-0" id="on-this-day-dashboard-panel">
             <button 
               type="button"
               onClick={() => setIsOnThisDayExpanded(!isOnThisDayExpanded)}
@@ -751,7 +767,7 @@ export default function MainDashboard({
           </div>
 
           {/* Chat Messages */}
-          <div className="flex-1 overflow-y-auto p-6 space-y-6" id="messages-container">
+          <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6" id="messages-container">
             {entry.messages.length === 0 ? (
               <div className="h-full flex flex-col items-center justify-center text-center max-w-md mx-auto space-y-4">
                 <div className="bg-ink-900 p-4 rounded-3xl border border-ink-700 shadow-lg">
@@ -877,9 +893,9 @@ export default function MainDashboard({
           </div>
 
           {/* Prompt Entry Box */}
-          <div className="p-4 border-t border-ink-700 bg-ink-900">
-            <form onSubmit={handleSendMessage} className="max-w-3xl mx-auto flex items-end space-x-3">
-              <div className="flex-1 bg-ink-900 border border-ink-700 rounded-2xl px-4 py-2.5 flex items-end">
+          <div className="p-3 sm:p-4 border-t border-ink-700 bg-ink-900">
+            <form onSubmit={handleSendMessage} className="max-w-3xl mx-auto flex items-end gap-2 sm:gap-3">
+              <div className="flex-1 min-w-0 bg-ink-900 border border-ink-700 rounded-2xl px-4 py-2.5 flex items-end">
                 <textarea
                   value={inputText}
                   onChange={(e) => setInputText(e.target.value)}

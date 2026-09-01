@@ -10,7 +10,8 @@ import InsightsDashboard from './components/InsightsDashboard';
 import AdminDashboard from './components/AdminDashboard';
 import WelcomeNote from './components/WelcomeNote';
 import { getTrialStatus, onTrialRemainingChange, type TrialStatus } from './lib/api';
-import { AlertTriangle, BookOpen, RefreshCw } from 'lucide-react';
+import { AlertTriangle, BookOpen, LogOut, Menu, Moon, RefreshCw, Sun } from 'lucide-react';
+import { applyTheme, getTheme, type Theme } from './lib/theme';
 
 const WELCOME_SEEN_KEY = 'reflect.welcomeSeen';
 
@@ -21,11 +22,22 @@ export default function App() {
   const [loading, setLoading] = useState(true);
   const [globalError, setGlobalError] = useState<string | null>(null);
   const [currentView, setCurrentView] = useState<'workspace' | 'insights' | 'admin'>('workspace');
+  // The sidebar collapses at every width. It overlays on a phone and pushes
+  // the workspace on a wide screen, where it starts open as it always has.
+  const [sidebarOpen, setSidebarOpen] = useState(() => window.innerWidth >= 768);
 
   // Shown once per browser on a first sign-in. Reading it lazily keeps the
   // modal from flashing for a returning writer while auth resolves.
   const [showWelcome, setShowWelcome] = useState(false);
   const [trial, setTrial] = useState<TrialStatus | null>(null);
+
+  // The top bar owns the theme so there is only ever one toggle to keep in sync.
+  const [theme, setTheme] = useState<Theme>(getTheme);
+  const toggleTheme = () => {
+    const next: Theme = theme === 'dark' ? 'light' : 'dark';
+    setTheme(next);
+    applyTheme(next);
+  };
 
   // Filters State
   const [searchQuery, setSearchQuery] = useState('');
@@ -155,6 +167,7 @@ export default function App() {
     // Set locally first to open the workspace instantly
     setCurrentView('workspace');
     setSelectedEntryId(newId);
+    if (window.innerWidth < 768) setSidebarOpen(false);
   };
 
   // Safe save handler to Firestore
@@ -264,8 +277,70 @@ export default function App() {
         </div>
       )}
 
+      {/* Top bar: hosts the sidebar toggle at every width */}
+      <div className="flex items-center justify-between px-3 py-2 border-b border-ink-700 bg-ink-900 shrink-0">
+        <button
+          onClick={() => setSidebarOpen(v => !v)}
+          aria-label={sidebarOpen ? 'Hide reflections' : 'Show reflections'}
+          aria-expanded={sidebarOpen}
+          id="sidebar-toggle-btn"
+          className="p-2 -ml-1 rounded-xl text-paper-400 hover:text-paper-50 hover:bg-ink-850 transition cursor-pointer"
+        >
+          <Menu className="w-5 h-5" />
+        </button>
+        <span className="font-semibold text-paper-50 tracking-tight">Reflect.ai</span>
+        <div className="flex items-center gap-1.5">
+          <button
+            onClick={toggleTheme}
+            id="theme-toggle-btn"
+            className="p-2 rounded-xl text-paper-400 hover:text-ember-400 hover:bg-ink-850 transition cursor-pointer"
+            title={theme === 'dark' ? 'Switch to light' : 'Switch to dark'}
+            aria-label={theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'}
+          >
+            {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+          </button>
+          {user.photoURL ? (
+            <img
+              src={user.photoURL}
+              alt={user.displayName || 'Profile'}
+              title={user.email || user.displayName || 'Signed in'}
+              referrerPolicy="no-referrer"
+              className="w-8 h-8 rounded-full object-cover border border-ink-700 shrink-0"
+            />
+          ) : (
+            <div
+              title={user.email || user.displayName || 'Signed in'}
+              className="w-8 h-8 rounded-full bg-ember-500 text-ink-950 flex items-center justify-center font-bold text-xs shrink-0"
+            >
+              {user.displayName ? user.displayName[0].toUpperCase() : 'U'}
+            </div>
+          )}
+          <button
+            onClick={handleSignOut}
+            id="logout-btn"
+            title="Sign Out"
+            aria-label="Sign out"
+            className="p-2 rounded-xl text-paper-400 hover:text-ember-400 hover:bg-ink-850 transition cursor-pointer"
+          >
+            <LogOut className="w-4 h-4" />
+          </button>
+        </div>
+      </div>
+
       {/* Main Full-Screen Layout */}
-      <div className="flex-1 flex overflow-hidden">
+      <div className="flex-1 flex overflow-hidden relative">
+        {sidebarOpen && (
+          <button
+            aria-label="Close reflections"
+            onClick={() => setSidebarOpen(false)}
+            className="md:hidden absolute inset-0 z-30 bg-ink-950/70 backdrop-blur-sm"
+          />
+        )}
+        <div
+          className={`absolute inset-y-0 left-0 z-40 h-full shrink-0 transition-all duration-300 md:static md:z-auto md:translate-x-0 md:overflow-hidden ${
+            sidebarOpen ? 'translate-x-0 md:w-80' : '-translate-x-full md:w-0'
+          }`}
+        >
         <Sidebar 
           user={user}
           trial={trial}
@@ -274,9 +349,9 @@ export default function App() {
           onSelectEntry={(id) => {
             setSelectedEntryId(id);
             setCurrentView('workspace');
+            if (window.innerWidth < 768) setSidebarOpen(false);
           }}
           onNewEntry={handleNewEntry}
-          onSignOut={handleSignOut}
           searchQuery={searchQuery}
           onSearchChange={setSearchQuery}
           selectedCategory={selectedCategory}
@@ -285,8 +360,12 @@ export default function App() {
           onMoodChange={setSelectedMood}
           onDeleteEntry={handleDeleteEntry}
           currentView={currentView}
-          onViewChange={setCurrentView}
+          onViewChange={(view) => {
+            setCurrentView(view);
+            if (window.innerWidth < 768) setSidebarOpen(false);
+          }}
         />
+        </div>
 
         <div key={currentView} className="flex-1 flex min-w-0 animate-settle">
         {currentView === 'admin' && user?.role === 'admin' ? (

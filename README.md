@@ -26,6 +26,7 @@ use it in the live app.
 - [Insights dashboard](#insights-dashboard) — mood trend, streak, focus distribution
 - [Bring your own key](#bring-your-own-key) — use your own Gemini key
 - [Admin console](#admin-console) — roles that stop short of your journal
+- [Care and safety guardrails](#care-and-safety-guardrails) — what the model does when an entry is not okay
 - [The design](#the-design) — colour reserved for mood
 
 **[Usability](#usability) — sign-in and interactions that do not fail**
@@ -58,7 +59,7 @@ use it in the live app.
 
 # Authenticity
 
-Nine features that are not in the starter lab. Each one names what it does, why it is
+Ten features that are not in the starter lab. Each one names what it does, why it is
 not the obvious version, and how to reach it in the running app.
 
 ## Semantic memory search
@@ -153,6 +154,39 @@ rate-limit counters. Its scope deliberately stops short of your journal — see
 **How to use it:** an account needs the admin role granted server-side
 (`npx tsx scripts/bootstrap-admin.ts <UID>`). The console then appears in the sidebar.
 A user cannot grant themselves the role.
+
+## Care and safety guardrails
+
+A journal is where distress gets written down first — often before it is said
+to anyone. That makes it a different kind of AI product from a chatbot, and it
+needs two guardrails that do not come for free.
+
+**Gemini's safety filters bound what the model may *say*. They do not notice
+that the *writer* is in trouble.** Left with a warm, reflective system prompt,
+the model's instinct on a frightening entry is to ask another gentle
+open-ended question — which invites someone further into the feeling instead
+of toward a person who can help. So the prompt is explicit: if an entry
+suggests risk of harm or a crisis that should not be faced alone, the model
+stops the reflective questioning, acknowledges what was written without alarm
+or judgement, and points toward a trusted person or a local crisis line. It
+does not diagnose, does not minimise, and does not end that reply with a
+probing question. The weekly letter carries the same rule for distress that
+shows up as a sustained pattern rather than a single entry.
+
+**Journal text is untrusted input.** Usually it is the writer's own words —
+but people paste emails, messages and articles into a journal, and an entry's
+model-written title and summary are fed back into the weekly letter later. So
+injected text can travel out of one entry and into a different prompt. Every
+prompt in the app states that the material is content to reflect on and never
+instructions to obey: text imitating a command, a role change, or a request to
+disregard instructions is treated as part of what the person wrote. The model
+will not adopt a persona from it, restate its instructions, or change its
+output format because the content asked it to.
+
+Both guardrails are covered by assertions in `npm run test:rbac`. They are
+prompt text, so the realistic failure is someone editing a prompt and dropping
+them silently — which no runtime check would catch, and a string assertion
+will.
 
 ## The design
 
@@ -296,6 +330,13 @@ the database, never logged, and never cached on the server.
 > not a credential. It authorises nothing on its own — access is governed entirely by
 > the security rules and the sign-in domain allowlist. Google documents it as safe to
 > expose. The key that matters is the Gemini one, and it never leaves the server.
+
+## Prompts are treated as a trust boundary
+
+Journal content reaches four different prompts, and one of them is fed
+metadata that an earlier model wrote. Every prompt states that the content is
+never an instruction — see
+[Care and safety guardrails](#care-and-safety-guardrails).
 
 ## The API is bounded
 

@@ -17,6 +17,11 @@ import {
   __resetTrialQuota,
   RATE_LIMIT_MAX,
   TRIAL_LIMIT,
+  JOURNAL_SYSTEM_INSTRUCTION,
+  ANALYZE_SYSTEM_INSTRUCTION,
+  digestInstruction,
+  UNTRUSTED_CONTENT_RULE,
+  CRISIS_CARE_RULE,
   MAX_MESSAGES,
   MAX_TOTAL_CHARS,
 } from '../server';
@@ -126,6 +131,42 @@ console.log('===========================================================');
   __resetRateLimit();
   const { res, nextCalled } = run(rateLimitPerUser, {});
   assert(!nextCalled && res.statusValue === 401, 'Rate limiter rejects an unauthenticated request');
+}
+
+// --- prompt guardrails ------------------------------------------------------
+// These are string assertions on purpose. The guardrails are prompt text, so
+// the failure mode is someone editing a prompt and dropping them silently —
+// which no runtime check would ever catch.
+{
+  const prompts: Array<[string, string]> = [
+    ['the journal companion', JOURNAL_SYSTEM_INSTRUCTION],
+    ['the entry analyzer', ANALYZE_SYSTEM_INSTRUCTION],
+    ['the weekly letter', digestInstruction('week')],
+  ];
+
+  for (const [name, prompt] of prompts) {
+    assert(
+      prompt.includes(UNTRUSTED_CONTENT_RULE),
+      `${name} prompt refuses to treat journal content as instructions`
+    );
+  }
+
+  assert(
+    JOURNAL_SYSTEM_INSTRUCTION.includes(CRISIS_CARE_RULE),
+    'The journal companion prompt carries the crisis-care guardrail'
+  );
+  assert(
+    /988|Samaritans|crisis line/i.test(JOURNAL_SYSTEM_INSTRUCTION),
+    'The crisis guardrail points at real human support, not just sympathy'
+  );
+  assert(
+    /crisis line|someone they trust/i.test(digestInstruction('all')),
+    'The all-time letter carries the crisis guardrail too, not just the weekly one'
+  );
+  assert(
+    !UNTRUSTED_CONTENT_RULE.includes('${'),
+    'The guardrail text interpolated rather than shipping a literal placeholder'
+  );
 }
 
 // --- trialQuota -------------------------------------------------------------

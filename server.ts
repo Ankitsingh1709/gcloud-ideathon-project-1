@@ -14,7 +14,7 @@ const app = express();
 const PORT = Number(process.env.PORT) || 3000;
 const FIREBASE_PROJECT_ID = process.env.FIREBASE_PROJECT_ID || "lab1-rag-project";
 const FIREBASE_AUTH_DOMAIN = `${FIREBASE_PROJECT_ID}.firebaseapp.com`;
-const APP_VERSION = '1.4.1';
+const APP_VERSION = '1.4.2';
 
 // Bound the request body before any route handler ever sees it.
 app.use(express.json({ limit: '64kb' }));
@@ -249,6 +249,11 @@ function getAiClient(byokKey?: string): GoogleGenAI {
   if (byokKey) return new GoogleGenAI({ apiKey: byokKey });
 
   if (!aiClient) {
+    // In production this variable is not a plain env var: Cloud Run reads the
+    // secret out of Google Cloud Secret Manager and injects it at container
+    // start, via `--set-secrets=GEMINI_API_KEY=GEMINI_API_KEY:latest`. The key
+    // is never in the repo or the image. Locally it comes from .env instead —
+    // see keySource() below, which reports which of the two is in play.
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) {
       throw new Error('GEMINI_API_KEY environment variable is required');
@@ -465,8 +470,23 @@ export function validateMessages(messages: any): string | null {
 // sidecar sits in front of this container and reserves that path for its own
 // probes — a route registered there is shadowed and answers with Google's
 // 404 page instead of ever reaching Express.
+//
+// It also reports where the Gemini key came from — the name of the source, never
+// the key. Cloud Run sets K_SERVICE, and on Cloud Run the only thing that
+// populates GEMINI_API_KEY is the --set-secrets binding, so K_SERVICE is a
+// truthful signal that the key was retrieved from Secret Manager.
+export function keySource(): string {
+  if (!process.env.GEMINI_API_KEY) return 'missing';
+  return process.env.K_SERVICE ? 'google-cloud-secret-manager' : 'local-env-file';
+}
+
 app.get('/api/health', (_req, res) => {
-  res.json({ status: 'ok', version: APP_VERSION, uptimeSeconds: process.uptime() });
+  res.json({
+    status: 'ok',
+    version: APP_VERSION,
+    uptimeSeconds: process.uptime(),
+    geminiKeySource: keySource(),
+  });
 });
 
 // How much of the shared-key trial is left. Read on sign-in so the allowance

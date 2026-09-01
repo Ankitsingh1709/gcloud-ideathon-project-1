@@ -232,4 +232,15 @@
     animation-iteration-count: 1 !important;
     transition-duration: 120ms !important;
   }
+
+  /* Progress is not decoration. The blanket rule above stops a decorative
+     loop, but it also stopped the busy indicators — a spinner that freezes
+     mid-turn while the app is still working reads as hung, which is a worse
+     outcome than the motion it removed. These keep looping, slowed so they
+     stay calm rather than insistent. */
+  .animate-spin,
+  .animate-pulse {
+    animation-iteration-count: infinite !important;
+    animation-duration: 1.6s !important;
+  }
 }

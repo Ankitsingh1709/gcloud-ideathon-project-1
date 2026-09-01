@@ -339,6 +339,17 @@ in the repository, not in the container image, and never sent to the client. Loc
 environment files are explicitly excluded from the build context so a developer's key
 cannot ride along into a deployment.
 
+The live service will tell you so itself — `/api/health` reports the *name* of the
+source it was handed the key from, never the key:
+
+```bash
+curl -s https://ai-journal-reflections-202050000797.us-central1.run.app/api/health
+# {"status":"ok","version":"1.4.1","uptimeSeconds":…,"geminiKeySource":"google-cloud-secret-manager"}
+```
+
+Run the same command locally and it answers `local-env-file`, because there is no
+Secret Manager in a dev shell.
+
 Every error returned to a browser passes through a scrubber that redacts anything
 shaped like a Google API key — in both the legacy and current key formats — so a
 provider error can never echo a key back to a user.

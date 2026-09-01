@@ -168,7 +168,7 @@ export default function SidebarEntryItem({
         className={`w-full text-left p-3.5 rounded-2xl transition-transform duration-300 ease-out flex flex-col space-y-2 border cursor-pointer relative z-10 ${
           isSelected 
             ? 'bg-ink-850 border-ink-700 shadow-md' 
-            : 'bg-ink-850 border-transparent hover:bg-ink-850'
+            : 'bg-ink-900 border-transparent hover:bg-ink-850'
         }`}
       >
         <div className="flex items-center justify-between">

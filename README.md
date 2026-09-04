@@ -445,9 +445,18 @@ the other, which is a hard failure to reproduce if you only ever test one.
 |---|---|
 | Request size | 64 KB |
 | Conversation length | 100 messages / 24,000 characters |
-| Rate limit | 10 requests, per user |
+| Rate limit | 20 requests per 5 minutes, per user |
+| Trial allowance | 10 AI generations per user, then bring your own key |
 | Model timeout | 15 seconds per model, across four models |
 | Digest input | 30 entries, outline only |
+
+The two user limits do different jobs. The **rate limit** shapes bursts and
+refills on a rolling five-minute window. The **trial allowance** bounds the total
+cost of an open sign-up: any Google account can sign in, so without a ceiling
+every signed-in caller spends the project's Gemini quota. It is charged on
+success only — a failed generation, a refused entry, or a stream that dies before
+the first word costs nothing — and a caller using [their own key](#bring-your-own-key)
+is not charged at all.
 
 ## Browser hardening
 

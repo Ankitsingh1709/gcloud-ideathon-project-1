@@ -143,11 +143,11 @@ Attach a place to a reflection. Three ways, each working independently of the ot
 browser prompt. Coordinates and accuracy fill in. Or pick a point on the map, or type
 coordinates directly.
 
-![The catalogue panel: generated title, category, mood, summary, and the location picker with latitude and longitude](assets/screenshots/catalog-and-location.png)
+![The catalogue panel: generated title, category, mood, summary, and the location picker](assets/screenshots/catalog-and-location.png)
 
 *The same panel holds **Synthesize & Catalog**, which is what writes the title,
-summary, category, mood and search embedding for an entry. The map tile is masked;
-the coordinate fields below it are the real control.*
+summary, category, mood and search embedding for an entry. The map tile and the
+coordinate fields are masked.*
 
 ## Insights dashboard
 

@@ -10,6 +10,8 @@ your own past back — ranked by meaning, not keywords.
 A journal is the most private thing a person will put in a database. Several
 decisions below deliberately cost features to keep that true.
 
+![The Reflect.ai sign-in screen: "Write it down. Think it through."](assets/screenshots/sign-in.png)
+
 ---
 
 ## Contents
@@ -31,6 +33,7 @@ use it in the live app.
 
 **[Usability](#usability) — sign-in and interactions that do not fail**
 - [One-click Google sign-in](#one-click-google-sign-in)
+- [It fits a phone](#it-fits-a-phone)
 - [Your writing is saved before the AI is called](#your-writing-is-saved-before-the-ai-is-called)
 - [Every failure has a way out](#every-failure-has-a-way-out)
 - [It works when the extras do not](#it-works-when-the-extras-do-not)
@@ -83,12 +86,19 @@ unrelated one at **0.67**, on a query whose words appear in neither.
 4. Search an emotion you never actually typed — *lost*, *hopeful*, *stuck*.
 5. The five closest entries come back in order of similarity.
 
+![The workspace: entry list, category and mood filters, and the Keyword / Meaning search toggle](assets/screenshots/workspace-and-search.png)
+
+*The **Keyword / Meaning** toggle sits directly under the search box. Mood and
+category chips are written by Gemini at catalogue time.*
+
 ## Streaming reflections
 
 Gemini's reply appears word by word instead of arriving as a block after a pause, so
 the app feels like it is thinking with you rather than making you wait.
 
 **How to use it:** write anything in the composer and press send. The reply streams in.
+
+![A reflection thread with Gemini's replies, the catalogue panel, and the On This Day drawer](assets/screenshots/reflection-thread.png)
 
 ## Voice journaling
 
@@ -129,6 +139,11 @@ Attach a place to a reflection. Three ways, each working independently of the ot
 browser prompt. Coordinates and accuracy fill in. Or pick a point on the map, or type
 coordinates directly.
 
+![The catalogue panel: generated title, category, mood, summary, and the location picker with latitude and longitude](assets/screenshots/catalog-and-location.png)
+
+*The same panel holds **Synthesize & Catalog**, which is what writes the title,
+summary, category, mood and search embedding for an entry.*
+
 ## Insights dashboard
 
 Your mood as a weekly trend line, your consecutive-day writing streak, and how your
@@ -136,6 +151,11 @@ entries distribute across categories. All of it derived from entries already loa
 it makes no extra database queries and no extra AI calls, so opening it costs nothing.
 
 **How to use it:** press **Insights** in the sidebar.
+
+![The insights dashboard: Week in Review, total reflections, streak, mood trend and focus distribution](assets/screenshots/insights-dashboard.png)
+
+*The **Write my letter** control at the top of this view is the
+[week in review](#week-in-review).*
 
 ## Bring your own key
 
@@ -155,6 +175,13 @@ rate-limit counters. Its scope deliberately stops short of your journal — see
 **How to use it:** an account needs the admin role granted server-side
 (`npx tsx scripts/bootstrap-admin.ts <UID>`). The console then appears in the sidebar.
 A user cannot grant themselves the role.
+
+![The admin console: claims bootstrapping, gateway status, and the two access-control audits](assets/screenshots/admin-console.png)
+
+*The two audit buttons prove the boundary rather than describing it: one sends an
+authorized token to `/api/admin/system-stats`, the other attempts a raw client-SDK
+write to `/admin_data` and expects to be refused. Account identifiers are redacted
+in this screenshot.*
 
 ## Care and safety guardrails
 
@@ -224,6 +251,15 @@ like a default AI dashboard, which was the point.
 Single sign-on through Google. One button, no account creation, no password, no email
 verification step. Sign out and back in as a second Google account and the sidebar is
 empty — your entries are yours.
+
+## It fits a phone
+
+The sidebar collapses behind a toggle, the thread can be expanded to fill the window,
+and on a narrow screen each entry card swipes aside to reveal share and delete.
+
+![Navigation controls: the sidebar toggle at top left and the expand control at top right](assets/screenshots/navigation-controls.png)
+
+![On a phone: swiping an entry card reveals share and delete](assets/screenshots/mobile-entry-actions.png)
 
 ## Your writing is saved before the AI is called
 

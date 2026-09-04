@@ -86,10 +86,11 @@ unrelated one at **0.67**, on a query whose words appear in neither.
 4. Search an emotion you never actually typed — *lost*, *hopeful*, *stuck*.
 5. The five closest entries come back in order of similarity.
 
-![The workspace: entry list, category and mood filters, and the Keyword / Meaning search toggle](assets/screenshots/workspace-and-search.png)
+![The workspace: search, the Keyword / Meaning toggle, and the category and mood filters](assets/screenshots/workspace-and-search.png)
 
-*The **Keyword / Meaning** toggle sits directly under the search box. Mood and
-category chips are written by Gemini at catalogue time.*
+*The **Keyword / Meaning** toggle sits directly under the search box. The mood and
+category filters are built from tags Gemini writes at catalogue time. Journal
+entries are masked in these screenshots.*
 
 ## Streaming reflections
 
@@ -99,6 +100,9 @@ the app feels like it is thinking with you rather than making you wait.
 **How to use it:** write anything in the composer and press send. The reply streams in.
 
 ![A reflection thread with Gemini's replies, the catalogue panel, and the On This Day drawer](assets/screenshots/reflection-thread.png)
+
+*Entry titles and the map tile are masked — the demo account's real entries and
+location.*
 
 ## Voice journaling
 
@@ -142,7 +146,8 @@ coordinates directly.
 ![The catalogue panel: generated title, category, mood, summary, and the location picker with latitude and longitude](assets/screenshots/catalog-and-location.png)
 
 *The same panel holds **Synthesize & Catalog**, which is what writes the title,
-summary, category, mood and search embedding for an entry.*
+summary, category, mood and search embedding for an entry. The map tile is masked;
+the coordinate fields below it are the real control.*
 
 ## Insights dashboard
 

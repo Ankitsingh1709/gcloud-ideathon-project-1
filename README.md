@@ -440,7 +440,7 @@ the other, which is a hard failure to reproduce if you only ever test one.
 |---|---|
 | Request size | 64 KB |
 | Conversation length | 100 messages / 24,000 characters |
-| Rate limit | 20 requests per 5 minutes, per user |
+| Rate limit | 10 requests, per user |
 | Model timeout | 15 seconds per model, across four models |
 | Digest input | 30 entries, outline only |
 

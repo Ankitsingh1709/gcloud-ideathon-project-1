@@ -5,6 +5,7 @@
  * reimplementing it, so the suite fails when the server changes. Run with
  * NODE_ENV=test (see package.json) so importing server.ts does not bind a port.
  */
+import { readFileSync } from 'node:fs';
 import {
   requireAdminRole,
   rateLimitPerUser,
@@ -374,6 +375,14 @@ console.log('===========================================================');
   assert(!scrubbed.includes(legacyKey), 'An API key is never echoed in an error message');
   assert(scrubbed.includes('REDACTED'), 'The redacted key is visibly marked');
   assert(safeMessage(null) === 'Unknown error', 'A null error degrades to a safe string');
+}
+
+// The README reproduces firestore.rules in full, because the submission asks
+// for the rules in the README. Two copies drift; this fails when they do.
+{
+  const rules = readFileSync('firestore.rules', 'utf8').trim();
+  const readme = readFileSync('README.md', 'utf8');
+  assert(readme.includes(rules), 'The README copy of firestore.rules matches the deployed file');
 }
 
 console.log('===========================================================');

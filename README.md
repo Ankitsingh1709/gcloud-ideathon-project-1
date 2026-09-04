@@ -56,6 +56,7 @@ use it in the live app.
 - [The one key that must be public is fenced instead](#the-one-key-that-must-be-public-is-fenced-instead)
 - [The API is bounded](#the-api-is-bounded)
 - [Browser hardening](#browser-hardening)
+- [The Firestore security rules](#the-firestore-security-rules) — the file in full
 
 **Reference**
 - [Google Cloud services used](#google-cloud-services-used)
@@ -338,7 +339,7 @@ path, and a probe pointed at it never reaches the app.
 
 ```bash
 npm run lint          # type-checks the whole project
-npm run test:rbac     # 31 assertions: access control, rate limits, input caps, key redaction
+npm run test:rbac     # 62 assertions: access control, rate limits, input caps, key redaction
 npm run test:search   # 12 assertions: similarity maths + a live ranking check
 ```
 
@@ -365,8 +366,9 @@ contents of anyone's entries.** This costs us an admin feature. That is the poin
 
 ## Isolation is enforced by rules, not by the client
 
-Entries live under a per-user path, and access is decided by database security rules —
-not by the app remembering to filter. Even a hand-crafted request straight to the
+Entries live under a per-user path, and access is decided by database security rules
+([`firestore.rules`](firestore.rules), reproduced [below](#the-firestore-security-rules))
+— not by the app remembering to filter. Even a hand-crafted request straight to the
 database is refused unless it belongs to the signed-in owner.
 
 The rules also *bound* what an owner may write: caps on message count, title length,
@@ -388,7 +390,7 @@ source it was handed the key from, never the key:
 
 ```bash
 curl -s https://ai-journal-reflections-202050000797.us-central1.run.app/api/health
-# {"status":"ok","version":"1.4.1","uptimeSeconds":…,"geminiKeySource":"google-cloud-secret-manager"}
+# {"status":"ok","version":"1.4.3","uptimeSeconds":…,"geminiKeySource":"google-cloud-secret-manager"}
 ```
 
 Run the same command locally and it answers `local-env-file`, because there is no
@@ -467,6 +469,114 @@ A Content Security Policy in production, plus HSTS, `nosniff`, clickjacking
 protection, a strict referrer policy, and a permissions policy that grants only the
 microphone and location the app actually uses — and nothing else, camera included.
 
+## The Firestore security rules
+
+`firestore.rules` in full — the deployed file, verbatim. It is the source of truth;
+`npm run test:rbac` fails if this copy drifts from it.
+
+```javascript
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Firestore is deny-by-default: any path not granted an allow below is
+    // already denied. A catch-all `match /{document=**} { allow ...: if false }`
+    // would be inert here, since allow rules are OR'd across matching paths and
+    // a `false` in one match cannot override an allow in another.
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    // Role comes from a custom claim minted by the Admin SDK
+    // (scripts/bootstrap-admin.ts). A client cannot set its own claim.
+    function isAdmin() {
+      return isSignedIn() && request.auth.token.role == 'admin';
+    }
+
+    // Coordinates must be real coordinates, not arbitrary numbers.
+    function hasValidLocation() {
+      return !('location' in request.resource.data)
+        || request.resource.data.location == null
+        || (
+          request.resource.data.location.lat is number &&
+          request.resource.data.location.lat >= -90 &&
+          request.resource.data.location.lat <= 90 &&
+          request.resource.data.location.lng is number &&
+          request.resource.data.location.lng >= -180 &&
+          request.resource.data.location.lng <= 180 &&
+          (!('placeName' in request.resource.data.location)
+            || request.resource.data.location.placeName == null
+            || request.resource.data.location.placeName is string)
+        );
+    }
+
+    // Bound the document so a signed-in user cannot stuff megabytes into
+    // their own subcollection. Every field below is written as a string or a
+    // list by the client, so the type check is a schema guarantee, not a
+    // convenience.
+    function isWithinSizeBounds() {
+      return (!('messages' in request.resource.data)
+          || (request.resource.data.messages is list
+              && request.resource.data.messages.size() <= 200))
+        && (!('title' in request.resource.data)
+          || (request.resource.data.title is string
+              && request.resource.data.title.size() <= 200))
+        && (!('summary' in request.resource.data)
+          || (request.resource.data.summary is string
+              && request.resource.data.summary.size() <= 2000))
+        // Semantic search embedding: gemini-embedding-001 at 768 dimensions.
+        // The client sanitizer rewrites undefined to null, so an entry that has
+        // not been catalogued yet arrives with embedding == null. That must be
+        // allowed, or every pre-catalogue save is rejected.
+        && (!('embedding' in request.resource.data)
+          || request.resource.data.embedding == null
+          || (request.resource.data.embedding is list
+              && request.resource.data.embedding.size() <= 768));
+    }
+
+    // --- Admin scope --------------------------------------------------------
+    // PRIVACY BY DESIGN: an admin can read operational metadata (which
+    // accounts exist) but has NO read path to journal content. On an app whose
+    // entire premise is private reflection, an "admin can read everything"
+    // rule is a diary backdoor, not an administrative convenience. Admin
+    // capability is limited to the profile document below and to the
+    // server-side /api/admin/* routes, which return uptime and rate-limit
+    // counters only.
+
+    match /admin_data/{docId} {
+      allow read, write: if isAdmin();
+    }
+
+    // Profile document: the owner controls it; an admin may read the metadata
+    // (uid / email / displayName) but may never write to it.
+    match /users/{userId} {
+      allow read: if isOwner(userId) || isAdmin();
+      allow write: if isOwner(userId);
+    }
+
+    // Journal entries: strictly owner-only, in both directions. No admin
+    // clause here, by design.
+    match /users/{userId}/entries/{entryId} {
+      allow read: if isOwner(userId);
+
+      // create/update and delete must be granted separately. `write` covers
+      // all three, but on a delete there is no incoming document, so
+      // request.resource is null and any validation helper that reads
+      // request.resource.data fails — which silently denied every deletion.
+      allow create, update: if isOwner(userId)
+                            && hasValidLocation()
+                            && isWithinSizeBounds();
+      allow delete: if isOwner(userId);
+    }
+  }
+}
+```
+
 ---
 
 # Google Cloud services used
@@ -519,7 +629,7 @@ gcloud run deploy ai-journal-reflections \
   --set-build-env-vars=VITE_GOOGLE_MAPS_API_KEY=YOUR_MAPS_BROWSER_KEY \
   --allow-unauthenticated --max-instances=2 --region=us-central1
 
-# 4. Deploy the security rules
+# 4. Deploy the security rules (source: firestore.rules)
 firebase deploy --only firestore:rules
 ```
 

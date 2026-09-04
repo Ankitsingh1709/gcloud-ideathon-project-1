@@ -320,17 +320,7 @@ takes over. But once a single word has reached the screen, the stream is committ
 it will never silently restart and rewrite itself halfway through a sentence. Falling
 back is only allowed while nothing is visible.
 
-## A render crash is recoverable
-
-An error boundary wraps the app, so a component failure shows a recovery screen
-instead of the white page that a React crash would otherwise produce.
-
 ## Failures are loud, not blank
-
-The page shell is served uncacheable while fingerprinted assets are cached
-permanently. This fixed a real bug where a stale cached shell asked for asset files
-that no longer existed and rendered nothing at all. A missing asset now returns a
-clear 404 rather than silently returning the HTML page in its place.
 
 The health probe lives at `/api/health`, not `/healthz` — Cloud Run reserves that
 path, and a probe pointed at it never reaches the app.
